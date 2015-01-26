@@ -12,7 +12,8 @@ numImages = fread(fp, 1, 'int32', 0, 'ieee-be');
 numRows = fread(fp, 1, 'int32', 0, 'ieee-be');
 numCols = fread(fp, 1, 'int32', 0, 'ieee-be');
 
-images = fread(fp, inf, 'uint8=>uint8');%'unsigned char'); % xp + 32-bit matlab
+% http://www.mathworks.com/matlabcentral/answers/84385-out-of-memory-error-while-reading-binary-file
+images = fread(fp, inf, 'uint8=>uint8');%'unsigned char'); % xp + 32-bit matlab - 
 images = reshape(images, numCols, numRows, numImages);
 images = permute(images,[2 1 3]);
 
