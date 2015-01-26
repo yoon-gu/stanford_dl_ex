@@ -79,6 +79,7 @@ fprintf('RMS testing error: %f\n', test_rms);
 % Plot predictions on test data.
 plot_prices=true;
 if (plot_prices)
+  close all; % clean plot in Octave
   [actual_prices,I] = sort(actual_prices);
   predicted_prices=predicted_prices(I);
   plot(actual_prices, 'rx');
