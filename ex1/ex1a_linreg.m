@@ -39,7 +39,7 @@ theta = rand(n,1);
 
 % Run the minFunc optimizer with linear_regression.m as the objective.
 %
-% TODO:  Implement the linear regression objective and gradient computations
+% Implemented the linear regression objective and gradient computations
 % in linear_regression.m
 %
 tic;
