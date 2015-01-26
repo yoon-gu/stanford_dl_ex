@@ -18,7 +18,12 @@ function [f,g] = logistic_regression(theta, X,y)
   % TODO:  Compute the objective function by looping over the dataset and summing
   %        up the objective values for each example.  Store the result in 'f'.
   %
+    % stupid row vectors...
+    h = sigmoid(theta' * X);
+    f = -( y*log(h') + (1-y)*log(1-h') );
+  
   % TODO:  Compute the gradient of the objective by looping over the dataset and summing
   %        up the gradients (df/dtheta) for each example. Store the result in 'g'.
   %
-%%% YOUR CODE HERE %%%
+    % copied from linear_regression.m
+    g = X * (h-y)';
