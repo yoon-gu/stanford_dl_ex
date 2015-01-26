@@ -4,7 +4,7 @@ http://git-scm.com/book/en/v2/Git-Basics-Working-with-Remotes
 git clone https://github.com/ypeels/stanford_dl_ex.git
 
 # will use as read-only
-git remote add stanford https://github.com/amaas/stanford_dl_ex
+git remote add stanford https://github.com/amaas/stanford_dl_ex.git
 
 # get all remote branch, etc. info
 # should be able to merge in changes from stanford/master like any other branch
