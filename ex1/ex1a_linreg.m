@@ -37,6 +37,9 @@ n=size(train.X,1);
 % Initialize the coefficient vector theta to random values.
 theta = rand(n,1);
 
+% "Debugging - Gradient Checking". SLOW!
+call_grad_check(@linear_regression_vec, theta, test);
+
 % Run the minFunc optimizer with linear_regression.m as the objective.
 %
 % Implemented the linear regression objective and gradient computations

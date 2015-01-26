@@ -25,6 +25,9 @@ options = struct('MaxIter', 100, 'useMex', false);  % useMex wasn't working for 
 % First, we initialize theta to some small random values.
 theta = rand(n,1)*0.001;
 
+% "Debugging - Gradient Checking". SLOW! uncomment if you want to try this.
+%call_grad_check(@logistic_regression_vec, theta, test); % could also call with training data, but that'd be slower
+
 % Call minFunc with the logistic_regression.m file as the objective function.
 %
 % Implemented batch logistic regression in the logistic_regression.m file!
