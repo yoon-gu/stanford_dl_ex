@@ -1,0 +1,16 @@
+http://git-scm.com/book/en/v2/Git-Basics-Working-with-Remotes
+
+# forked on github.com
+git clone https://github.com/ypeels/stanford_dl_ex.git
+
+# will use as read-only
+git remote add stanford https://github.com/amaas/stanford_dl_ex
+
+# get all remote branch, etc. info
+# should be able to merge in changes from stanford/master like any other branch
+git fetch stanford
+git branch -r
+
+# sync with personal remote
+git pull   # pulls from the `git clone` repo
+git push origin master
