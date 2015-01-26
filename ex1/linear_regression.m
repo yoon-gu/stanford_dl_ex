@@ -16,17 +16,27 @@ function [f,g] = linear_regression(theta, X,y)
   %
   %        Compute the linear regression objective by looping over the examples in X.
   %        Store the objective function value in 'f'.
-  
-    % annoyingly, X is the transpose of the usual design matrix
-    errors = theta'*X - y;
-    f = 0.5 * sum(errors.^2);
-  
   %
   %        Compute the gradient of the objective with respect to theta by looping over
   %        the examples in X and adding up the gradient for each example.  Store the
   %        computed gradient in 'g'.
   
-    % i think this is right by inspection
-    g = X * errors'; 
+    % unvectorized for runtime comparison
+    for i=1:m
+        xi = X(:, i);
+        error = theta'*xi - y(i);
+        
+        f = f + error^2;
+        
+        % g = g + xi*error; % uh, i had FIGHT my instincts to write the loop below
+        for j = 1:n
+            g(j) = g(j) + xi(j)*error;
+        end
+        
+    end
+    
+    f = 0.5*f;
+  
+
   
 

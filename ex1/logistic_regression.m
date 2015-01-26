@@ -15,15 +15,17 @@ function [f,g] = logistic_regression(theta, X,y)
 
 
   %
-  % TODO:  Compute the objective function by looping over the dataset and summing
+  %        Compute the objective function by looping over the dataset and summing
   %        up the objective values for each example.  Store the result in 'f'.
   %
-    % stupid row vectors...
-    h = sigmoid(theta' * X);
-    f = -( y*log(h') + (1-y)*log(1-h') );
-  
-  % TODO:  Compute the gradient of the objective by looping over the dataset and summing
+  %        Compute the gradient of the objective by looping over the dataset and summing
   %        up the gradients (df/dtheta) for each example. Store the result in 'g'.
   %
-    % copied from linear_regression.m
-    g = X * (h-y)';
+    for i=1:m
+        xi = X(:,i);
+        yi = y(i);
+        hi = sigmoid(theta' * xi);
+        
+        f = f - (yi*log(hi) + (1-yi)*log(1-hi));
+        g = g + xi*(hi-yi); % this is already "slow enough" - no need to "unvectorize" further...
+    end
