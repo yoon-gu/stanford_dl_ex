@@ -31,13 +31,15 @@ options = struct('MaxIter', 200, 'useMex', false);
 % We only use num_classes-1 columns, since the last column is always assumed 0.
 theta = rand(n,num_classes-1)*0.001;
 
+call_grad_check(@softmax_regression_vec, theta, test);
+
 % Call minFunc with the softmax_regression_vec.m file as objective.
 %
-% TODO:  Implement batch softmax regression in the softmax_regression_vec.m
+% Implemented batch softmax regression in the softmax_regression_vec.m
 % file using a vectorized implementation.
 %
 tic;
-theta(:)=minFunc(@softmax_regression_vec, theta(:), options, train.X, train.y);
+theta(:)=minFunc(@softmax_regression_vec, theta(:), options, train.X, train.y);     % much slower than stochastic gradient descent?
 fprintf('Optimization took %f seconds.\n', toc);
 theta=[theta, zeros(n,1)]; % expand theta to include the last class.
 
