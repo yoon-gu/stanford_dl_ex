@@ -1,6 +1,5 @@
 function average_error = grad_check(fun, theta0, num_checks, varargin)
-  % apparently this (error-riddled) function numerically checks a random sample of partial derivatives.
-  % it doesn't even check the full gradient unless you take num_checks = numel(theta0)
+  % Numerically check a random subset of partial derivatives.
 
   delta=1e-3; 
   sum_error=0;
@@ -8,18 +7,18 @@ function average_error = grad_check(fun, theta0, num_checks, varargin)
   fprintf(' Iter       i             err');
   fprintf('           g_est               g               f\n')
 
+  % could do randsample(numel(T), num_checks), but this is more Octave-compatible
+  shuffle = randperm(numel(T));
+  
+  % same for all iterations; moved outside loop
   T = theta0;
   [f,g] = fun(T, varargin{:});
   
-  shuffle = randperm(numel(T));
-  
   for i=1:num_checks
-    %T = theta0;
-    j = shuffle(i);%randsample(numel(T),1);
+    j = shuffle(i); % randsample(n, 1) == sampling WITH replacement...
     T0=T; T0(j) = T0(j)-delta;
     T1=T; T1(j) = T1(j)+delta;
 
-    %[f,g] = fun(T, varargin{:}); % WHY are you repeatedly calling lines like this in the inner loop??
     f0 = fun(T0, varargin{:});
     f1 = fun(T1, varargin{:});
 
@@ -32,18 +31,7 @@ function average_error = grad_check(fun, theta0, num_checks, varargin)
     sum_error = sum_error + error;
   end
 
-  average_error=sum_error/num_checks; % wow, another mistake... whoever wrote this is not very careful...
+  average_error=sum_error/num_checks; 
 end
 
 
-
-function y = randsample(n, k)
-    % returns a k-by-1 vector y of values sampled uniformly at random, without replacement, from the integers 1 to n.
-    % undefined in Octave 3.2.4
-    if isOctave
-        y = randperm(n);
-        y = y(1:k);
-    else
-        y = randsample(n, k);
-    end
-end
