@@ -1096,6 +1096,7 @@ for i = 1:maxIter
     % Output iteration information
     if verboseI
         fprintf('%10d %10d %15.5e %15.5e %15.5e\n',i,funEvals*funEvalMultiplier,t,f,optCond);
+        if isOctave; fflush(stdout); end
     end
 
     if nargout > 3
