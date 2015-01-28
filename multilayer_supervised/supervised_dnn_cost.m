@@ -33,8 +33,11 @@ for l=1:nl-1
     %Z{l+1} = (stack{l}.W)*hAct{l}; + repmat(stack{l}.b, 1, size(hAct{l}, 2)); % which is less opaque? i'm not sure...
     Z{l+1} = bsxfun(@plus, (stack{l}.W)*hAct{l}, stack{l}.b); % but this SHOULD require less storage?
     
-    % a(l+1) = f(z(l+1))
-    hAct{l+1} = f(Z{l+1}, ei);
+    % a(l+1) = f(z(l+1)) for hidden layers.
+    % as per instructions, output layer will be treated separately with softmax/maxent/Boltzmann in cost code
+    if (l+1 < nl)
+        hAct{l+1} = f(Z{l+1}, ei);
+    end
 end
 
 %% return here if only predictions desired.
@@ -46,6 +49,8 @@ end;
 
 %% compute cost
 %%% YOUR CODE HERE %%%
+% cost and initial gradient can just use softmax_regression_vec, right?
+% wait, theta values are the last weight layer?? so unclear... but that's what civilstat does.
 
 %% compute gradients using backpropagation
 %%% YOUR CODE HERE %%%
@@ -54,7 +59,7 @@ end;
 %%% YOUR CODE HERE %%%
 
 %% Some error checking
-assert(isempty(Z{1}));
+assert(isempty(Z{1}), 'The first member of Z was supposed to be thrown away to normalize numbering');
 
 %% reshape gradients into vector
 [grad] = stack2params(gradStack);
