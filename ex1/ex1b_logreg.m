@@ -20,7 +20,7 @@ m=size(train.X,2);
 n=size(train.X,1);
 
 % Train logistic regression classifier using minFunc
-options = struct('MaxIter', 100, 'useMex', false);  % useMex wasn't working for me in Octave OR MATLAB R2014b
+options = struct('MaxIter', 100, 'useMex', true);  % run common/minFunc_2012/minFunc/mexAll.m to compile
 
 % First, we initialize theta to some small random values.
 theta = rand(n,1)*0.001;

@@ -28,7 +28,7 @@ n=size(train.X,1);
 %train.y = train.y(1:m);
 
 % Train softmax classifier using minFunc
-options = struct('MaxIter', 200, 'useMex', false);
+options = struct('MaxIter', 200, 'useMex', true); % run common/minFunc_2012/minFunc/mexAll.m to compile
 
 % Initialize theta.  We use a matrix where each column corresponds to a class,
 % and each row is a classifier coefficient for that class.

@@ -46,7 +46,7 @@ call_grad_check(@linear_regression_vec, theta, test);
 % in linear_regression.m
 %
 tic;
-options = struct('MaxIter', 200, 'useMex', false);  % useMex failed for BOTH octave and MATLAB R2014b?
+options = struct('MaxIter', 200, 'useMex', true);  % run common/minFunc_2012/minFunc/mexAll.m to compile
 theta = minFunc(@linear_regression, theta, options, train.X, train.y);
 fprintf('Optimization took %f seconds.\n', toc);
 
