@@ -22,6 +22,11 @@ test.y = test.y+1; % make labels 1-based.
 m=size(train.X,2);
 n=size(train.X,1);
 
+% FOR DEBUGGING: use only a tiny fraction of the data to check gradients, vectorization
+%m = m/100;
+%train.X = train.X(:, 1:m);
+%train.y = train.y(1:m);
+
 % Train softmax classifier using minFunc
 options = struct('MaxIter', 200, 'useMex', false);
 
@@ -31,7 +36,8 @@ options = struct('MaxIter', 200, 'useMex', false);
 % We only use num_classes-1 columns, since the last column is always assumed 0.
 theta = rand(n,num_classes-1)*0.001;
 
-call_grad_check(@softmax_regression_vec, theta, test);
+% for debugging
+%call_grad_check(@softmax_regression_vec, theta, test);
 
 % Call minFunc with the softmax_regression_vec.m file as objective.
 %

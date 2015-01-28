@@ -27,6 +27,7 @@ function average_error = grad_check(fun, theta0, num_checks, varargin)
 
     fprintf('% 5d  % 6d % 15g % 15f % 15f % 15f\n', ...
             i,j,error,g_est,g(j),f); % xuewei4d caught this
+    if isOctave; fflush(stdout); end
 
     sum_error = sum_error + error;
   end
