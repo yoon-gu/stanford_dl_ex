@@ -38,7 +38,7 @@ n=size(train.X,1);
 theta = rand(n,1);
 
 % "Debugging - Gradient Checking". SLOW!
-call_grad_check(@linear_regression_vec, theta, test);
+%call_grad_check(@linear_regression_vec, theta, test);
 
 % Run the minFunc optimizer with linear_regression.m as the objective.
 %
@@ -46,7 +46,9 @@ call_grad_check(@linear_regression_vec, theta, test);
 % in linear_regression.m
 %
 tic;
-options = struct('MaxIter', 200, 'useMex', true);  % run common/minFunc_2012/minFunc/mexAll.m to compile
+options = struct('MaxIter', 200);
+options.useMex = true;  % run common/minFunc_2012/minFunc/mexAll.m to compile
+options.DerivativeCheck = 'on'; % built into minFunc
 theta = minFunc(@linear_regression, theta, options, train.X, train.y);
 fprintf('Optimization took %f seconds.\n', toc);
 
