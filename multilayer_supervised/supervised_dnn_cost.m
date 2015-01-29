@@ -29,7 +29,6 @@ delta = cell(nl, 1);
 
 
 %% forward prop
-
     % input layer
     hAct{1} = data;
     
@@ -46,18 +45,17 @@ delta = cell(nl, 1);
             hAct{l} = f(Z{l}, ei);
         end        
     end
-    
-    
 
+    
 %% return here if only predictions desired.
-if po
-  %cost = -1; %ceCost = -1; wCost = -1; numCorrect = -1;
-  %grad = [];  
-  return;
-end;
+    if po
+      %cost = -1; %ceCost = -1; wCost = -1; numCorrect = -1;
+      %grad = [];  
+      return;
+    end;
 
+    
 %% compute cost
-
     % cost and initial gradient can just use softmax_regression_vec, right? 
         % no, gradient is different. plus, we already have z = inner products
     % wait, theta values are the last weight layer?? so unclear... but that's what civilstat does.
@@ -66,15 +64,19 @@ end;
     % ugh, really want to use temporary variables, but don't want to pollute namespace any further....
     % i mean, this part is really system-specific, and distracts from the main backprop logic
     [cost, delta{nl}] = calc_cost_and_output_delta(Z{nl}, labels);
+    
 
 %% compute gradients using backpropagation
 %%% YOUR CODE HERE %%%
 
+
 %% compute weight penalty cost and gradient for non-bias terms
 %%% YOUR CODE HERE %%%
 
+
 %% Some error checking
 assert(isempty(Z{1}), 'The first member of Z was supposed to be thrown away to normalize numbering');
+
 
 %% reshape gradients into vector
 [grad] = stack2params(gradStack);
