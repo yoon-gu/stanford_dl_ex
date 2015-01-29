@@ -30,8 +30,7 @@ function [f,g] = softmax_regression_vec(theta, X,y)
     % Since the cost function is ONLY evaluated here, it's entirely arbitrary 
     % which class for which to have theta = 0. Follow the tutorial and set theta(K) = 0.
     % I guess if you really want performance, you can comment out all the asserts...
-    assert(isequal(size(theta), [n num_classes-1]))
-    fulltheta = [theta zeros(n, 1)];
+    assert(isequal(size(theta), [n num_classes-1]))    
     
     % not wasteful - must construct all terms for the partition functions.
     % p_unnormalized(k,i) = unnormalized P(y(i) = k)
@@ -71,6 +70,8 @@ function [f,g] = softmax_regression_vec(theta, X,y)
     % various testing during development
     DEBUG = false;
     if DEBUG
+    
+        fulltheta = [theta zeros(n, 1)];
         
         % looks like when there's no test code in place, the easiest thing to do 
         % is just to check right here with unvectorized versions
