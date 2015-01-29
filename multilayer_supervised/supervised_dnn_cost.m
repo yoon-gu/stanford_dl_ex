@@ -22,23 +22,32 @@ numHidden = numel(ei.layer_sizes) - 1;
 hAct = cell(numHidden+2, 1);    % activations? throw away first cell to make numbering match.
 gradStack = params2stack(grad, ei);
 
-Z = cell(numel(hAct), 1);
 nl = numHidden+2;
+Z = cell(nl, 1);
+delta = cell(nl, 1);
 
-%% forward prop - just reading off the tutorial. easy!
-hAct{1} = data;
-for l=1:nl-1
+
+
+%% forward prop
+
+    % input layer
+    hAct{1} = data;
     
-    % z(l+1) = W(l)x + b(l)
-    %Z{l+1} = (stack{l}.W)*hAct{l}; + repmat(stack{l}.b, 1, size(hAct{l}, 2)); % which is less opaque? i'm not sure...
-    Z{l+1} = bsxfun(@plus, (stack{l}.W)*hAct{l}, stack{l}.b); % but this SHOULD require less storage?
-    
-    % a(l+1) = f(z(l+1)) for hidden layers.
-    % as per instructions, output layer will be treated separately with softmax/maxent/Boltzmann in cost code
-    if (l+1 < nl)
-        hAct{l+1} = f(Z{l+1}, ei);
+    % propagate to hidden layers - just reading off the tutorial. easy peasy!
+    for l=2:nl
+        
+        % z(l) = W(l-1)x + b(l-1) from definition of the linear signal
+        %Z{l} = (stack{l-1}.W)*hAct{l-1}; + repmat(stack{l-1}.b, 1, size(hAct{l-1}, 2)); % which is less opaque? i'm not sure...
+        Z{l} = bsxfun(@plus, (stack{l-1}.W)*hAct{l-1}, stack{l-1}.b); % but this SHOULD require less storage?
+        
+        % a(l) = f(z(l)) by definition of nonlinear activations for hidden layers.
+        % as per instructions, output layer will be treated separately with softmax/maxent/Boltzmann in cost code
+        if (l < nl)
+            hAct{l} = f(Z{l}, ei);
+        end        
     end
-end
+    
+    
 
 %% return here if only predictions desired.
 if po
@@ -48,9 +57,15 @@ if po
 end;
 
 %% compute cost
-%%% YOUR CODE HERE %%%
-% cost and initial gradient can just use softmax_regression_vec, right?
-% wait, theta values are the last weight layer?? so unclear... but that's what civilstat does.
+
+    % cost and initial gradient can just use softmax_regression_vec, right? 
+        % no, gradient is different. plus, we already have z = inner products
+    % wait, theta values are the last weight layer?? so unclear... but that's what civilstat does.
+    assert(size(Z{nl}, 1) == ei.output_dim);
+    
+    % ugh, really want to use temporary variables, but don't want to pollute namespace any further....
+    % i mean, this part is really system-specific, and distracts from the main backprop logic
+    [cost, delta{nl}] = calc_cost_and_output_delta(Z{nl}, labels);
 
 %% compute gradients using backpropagation
 %%% YOUR CODE HERE %%%
@@ -69,11 +84,39 @@ end
 
 function a = f(Z, ei)
     % hidden unit nonlinearity
-    if (isequal(ei.activation_fun, 'logistic'))
-        % from ex1/sigmoid.m
-        a = 1 ./ (1+exp(-Z));
-    else
-        message = sprintf('Unknown activation function: %s\n', ei.activation_fun);
-        assert(false, message);
+    switch ei.activation_fun
+        case 'logistic'
+            % from ex1/sigmoid.m
+            a = 1 ./ (1+exp(-Z));
+        otherwise
+            message = sprintf('Unknown activation function: %s\n', ei.activation_fun);
+            assert(false, message);
     end
+end
+
+
+
+function [cost, delta] = calc_cost_and_output_delta(Z, y)
+    % calculates cost J(theta)
+    % calculates delta(nl) for each example
+
+    % reusing lots of code from softmax_regression_vec.m...
+    n = size(Z, 1); % rows = classes
+    m = size(Z, 2); % cols = data examples 
+    assert(n == 10, '10 classes for digits data');
+    
+    % CANNOT fix weights for last class to 0 ("zero energy level")! not without changing initialize_weights()... meh
+    p_unnormalized = exp(Z);
+    P = bsxfun(@rdivide, p_unnormalized, sum(p_unnormalized, 1));
+    logP = log(P);    
+    
+    % the slick "indicator function" from softmax_regression_vec.m
+    % annoyingly, y = labels is a COLUMN vector here, but it was a ROW vector in softmax_regression_vec
+    observed = sub2ind(size(logP), y', 1:m);    
+    cost = -sum(logP( observed )); 
+    
+    % SIMILAR to softmax_regression_vec.m, but there is no multiplication by X or summation over examples.
+    delta = P;
+    delta(observed) = delta(observed) - 1; % inspired by civilstat
+
 end
