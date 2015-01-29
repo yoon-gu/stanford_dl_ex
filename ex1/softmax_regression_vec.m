@@ -35,7 +35,8 @@ function [f,g] = softmax_regression_vec(theta, X,y)
     
     % not wasteful - must construct all terms for the partition functions.
     % p_unnormalized(k,i) = unnormalized P(y(i) = k)
-    p_unnormalized = exp(fulltheta' * X); 
+    %p_unnormalized = exp(fulltheta' * X); 
+    p_unnormalized = [exp(theta' * X); ones(1, m)]; % 10% fewer exp() calls - optimizing for neural network
     
     % normalize and take logarithms. store log(P) for f; store P for g (gradient)
     P = bsxfun(@rdivide, p_unnormalized, sum(p_unnormalized, 1)); % bsxfun from hint 2
