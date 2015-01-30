@@ -24,8 +24,9 @@ gradStack = params2stack(grad, ei);
 
 nl = numHidden+2;
 m = size(data, 2); % number of data examples
-Z = cell(nl, 1);
+Z = cell(nl, 1); % eat the empty 1st cell to get numbering to agree with tutorial
 delta = cell(nl, 1);
+DEBUG = true;
 
 
 
@@ -64,8 +65,7 @@ delta = cell(nl, 1);
     % cost and initial gradient can just use softmax_regression_vec, right? 
         % no, gradient is different. plus, we already have z = inner products
     % wait, theta values are the last weight layer?? so unclear... but that's what civilstat does.
-    assert(size(Z{nl}, 1) == ei.output_dim);
-    
+        
     % system-specific parts kept in subroutines to avoid obfuscating basic backprop logic
     cost = calc_cost(pred_prob, labels);
     
@@ -89,24 +89,31 @@ delta = cell(nl, 1);
 %%% YOUR CODE HERE %%%
 
 
-%% Some error checking
-    assert(isempty(Z{1}), 'The first member of Z was supposed to be thrown away to normalize numbering');
-    
-    % delta{1} also empty?
+%% Paranoid error checking
+    if DEBUG
+        assert(size(Z{nl}, 1) == ei.output_dim);
+        assert(isempty(Z{1}), 'The first member of Z was supposed to be thrown away to normalize numbering');
+        assert(isempty(delta{1}));
+    end
 
 
 %% reshape gradients into vector
-[grad] = stack2params(gradStack);
+    [grad] = stack2params(gradStack);
 end
 
 
 
-function a = f(Z, ei)
+function A = f(Z, ei)
     % hidden unit nonlinearity
     switch ei.activation_fun
         case 'logistic'
             % from ex1/sigmoid.m
-            a = 1 ./ (1+exp(-Z));
+            A = 1 ./ (1+exp(-Z));
+        case 'tanh'
+            A = tanh(Z);
+        case 'rectified'
+            A = Z;
+            A(A < 0) = 0;
         otherwise
             message = sprintf('Unknown activation function: %s\n', ei.activation_fun);
             assert(false, message);
@@ -120,6 +127,11 @@ function fp = fprime(Z, f, ei)
     switch ei.activation_fun
         case 'logistic'
             fp = f .* (1-f);
+        case 'tanh'
+            fp = 1 - f.^2;
+        case 'rectified'
+            fp = zeros(size(f));
+            fp(f > 0) = 1;
         otherwise
             message = sprintf('Unknown activation function: %s\n', ei.activation_fun);
             assert(false, message);
