@@ -30,7 +30,7 @@ ei.output_dim = 10;
 %ei.layer_sizes = [256, ei.output_dim]; % default
 ei.layer_sizes = [256, ei.output_dim];
 % scaling parameter for l2 weight regularization penalty
-ei.lambda = 0;
+ei.lambda = 10;
 % which type of activation function to use in hidden layers
 % feel free to implement support for only the logistic sigmoid function     % this was EASY relative to all the NN bookkeeping
 ei.activation_fun = 'logistic'; % 'logistic', 'tanh', or 'rectified'
@@ -56,8 +56,10 @@ options.useMex = true; % my additions
 options.DerivativeCheck = 'off';
 
 %% run training
+tic;
 [opt_params,opt_value,exitflag,output] = minFunc(@supervised_dnn_cost,...
     params,options,ei, data_train, labels_train);
+fprintf('Optimization took %f seconds.\n', toc);
 
 %% compute accuracy on the test and train set
 [unused_, unused_, pred] = supervised_dnn_cost( opt_params, ei, data_test, [], true);
