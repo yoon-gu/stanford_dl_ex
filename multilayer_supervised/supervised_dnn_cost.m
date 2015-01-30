@@ -67,7 +67,6 @@ delta = cell(nl, 1);
     
     % system-specific parts kept in subroutines to avoid obfuscating basic backprop logic
     cost = calc_cost(pred_prob, labels);
-    %[cost, delta{nl}] = calc_cost_and_output_delta(Z{nl}, labels);
     
 
 %% compute gradients using backpropagation
@@ -138,7 +137,9 @@ function obs = observed(M, y)
     %   y = (m x 1) vector. each entry is the observed row of the mth example
     % output
     %   obs = (1 x m) vector = indices of the observed entries in M
-    obs = sub2ind(size(M), y', 1:size(M, 2));
+    m = size(M, 2);
+    assert(isequal(size(y), [m 1]));
+    obs = sub2ind(size(M), y', 1:m);
 end
 
 
