@@ -74,7 +74,7 @@ DEBUG = true;
     delta{nl} = calc_output_delta(pred_prob, labels);
     
     % ok, it's gonna be much easier than the ml homework if they're just gonna give it to us in the tutorial...
-    for l=nl-1:2
+    for l=nl-1:-1:2
         delta{l} = (stack{l}.W' * delta{l+1}) .* fprime(Z{l}, hAct{l}, ei);
     end
     
@@ -86,7 +86,10 @@ DEBUG = true;
 
 
 %% compute weight penalty cost and gradient for non-bias terms
-%%% YOUR CODE HERE %%%
+    for l=1:nl-1
+        cost = cost + (ei.lambda/2) * sum(sum(stack{l}.W.^2));
+        gradStack{l}.W = gradStack{l}.W + ei.lambda*stack{l}.W;
+    end
 
 
 %% Paranoid error checking
