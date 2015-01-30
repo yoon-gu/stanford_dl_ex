@@ -2,6 +2,8 @@
 % softmax output layer with cross entropy loss function
 
 %% setup environment
+clear all; % prevents crashing on reloading 45 MB training data from disk
+
 % experiment information
 % a struct containing network layer sizes etc
 ei = [];
@@ -25,12 +27,21 @@ ei.input_dim = 784;
 % number of output classes
 ei.output_dim = 10;
 % sizes of all hidden layers and the output layer
+%ei.layer_sizes = [256, ei.output_dim]; % default
 ei.layer_sizes = [256, ei.output_dim];
 % scaling parameter for l2 weight regularization penalty
 ei.lambda = 0;
 % which type of activation function to use in hidden layers
-% feel free to implement support for only the logistic sigmoid function
-ei.activation_fun = 'logistic';
+% feel free to implement support for only the logistic sigmoid function     % this was EASY relative to all the NN bookkeeping
+ei.activation_fun = 'logistic'; % 'logistic', 'tanh', or 'rectified'
+% toggle my paranoid error checking
+ei.DEBUG = false; 
+if ei.DEBUG
+    % speed things up for debugging
+    m = size(data_train, 2) / 1000;
+    data_train = data_train(:, 1:m);
+    labels_train = labels_train(1:m);
+end
 
 %% setup random initial weights
 stack = initialize_weights(ei);
@@ -42,7 +53,7 @@ options.display = 'iter';
 options.maxFunEvals = 1e6;
 options.Method = 'lbfgs';
 options.useMex = true; % my additions
-options.DerivativeCheck = 'on';
+options.DerivativeCheck = 'off';
 
 %% run training
 [opt_params,opt_value,exitflag,output] = minFunc(@supervised_dnn_cost,...

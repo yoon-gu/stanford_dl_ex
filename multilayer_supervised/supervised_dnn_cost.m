@@ -26,7 +26,7 @@ nl = numHidden+2;
 m = size(data, 2); % number of data examples
 Z = cell(nl, 1); % eat the empty 1st cell to get numbering to agree with tutorial
 delta = cell(nl, 1);
-DEBUG = true;
+DEBUG = ei.DEBUG;
 
 
 
