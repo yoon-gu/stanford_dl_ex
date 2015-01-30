@@ -14,12 +14,12 @@ if exist('pred_only','var') % uh, does matlab automatically do optional argument
 end;
 cost = 0;
 grad = zeros(size(theta));
-pred_prob = 0;
+pred_prob = zeros(ei.output_dim, size(data, 2)); % THIS is the correct "empty stub" default value
 
 %% reshape into network
 stack = params2stack(theta, ei);
 numHidden = numel(ei.layer_sizes) - 1;
-hAct = cell(numHidden+2, 1);    % activations? throw away first cell to make numbering match.
+hAct = cell(numHidden+1, 1);    % activations. last layer is stored as pred_prob instead
 gradStack = params2stack(grad, ei);
 
 nl = numHidden+2;
@@ -29,7 +29,7 @@ delta = cell(nl, 1);
 
 
 %% forward prop
-    % input layer
+    % input layer - to avoid special code JUST for the first iteration
     hAct{1} = data;
     
     % propagate to hidden layers - just reading off the tutorial. easy peasy!
@@ -45,12 +45,16 @@ delta = cell(nl, 1);
             hAct{l} = f(Z{l}, ei);
         end        
     end
-
+    
+    % final layer outputs softmax (maxent) class probabilities
+        % COULD in principle exploit monotonicity of exp(.) to make predictions, but the user spec is to output a probability...
+    pred_prob = calc_softmax_probabilities(Z{nl});
+    
     
 %% return here if only predictions desired.
     if po
-      %cost = -1; %ceCost = -1; wCost = -1; numCorrect = -1;
-      %grad = [];  
+      cost = -1; %ceCost = -1; wCost = -1; numCorrect = -1;
+      grad = [];  
       return;
     end;
 
@@ -61,13 +65,13 @@ delta = cell(nl, 1);
     % wait, theta values are the last weight layer?? so unclear... but that's what civilstat does.
     assert(size(Z{nl}, 1) == ei.output_dim);
     
-    % ugh, really want to use temporary variables, but don't want to pollute namespace any further....
-    % i mean, this part is really system-specific, and distracts from the main backprop logic
-    [cost, delta{nl}] = calc_cost_and_output_delta(Z{nl}, labels);
+    % system-specific parts kept in subroutines to avoid obfuscating basic backprop logic
+    cost = calc_cost(pred_prob, labels);
+    %[cost, delta{nl}] = calc_cost_and_output_delta(Z{nl}, labels);
     
 
 %% compute gradients using backpropagation
-%%% YOUR CODE HERE %%%
+    delta{nl} = calc_output_delta(pred_prob, labels);
 
 
 %% compute weight penalty cost and gradient for non-bias terms
@@ -75,7 +79,9 @@ delta = cell(nl, 1);
 
 
 %% Some error checking
-assert(isempty(Z{1}), 'The first member of Z was supposed to be thrown away to normalize numbering');
+    assert(isempty(Z{1}), 'The first member of Z was supposed to be thrown away to normalize numbering');
+    
+    % delta{1} also empty?
 
 
 %% reshape gradients into vector
@@ -98,10 +104,9 @@ end
 
 
 
-function [cost, delta] = calc_cost_and_output_delta(Z, y)
-    % calculates cost J(theta)
-    % calculates delta(nl) for each example
-
+function pred_prob = calc_softmax_probabilities(Z)
+    % computes predicted class probabilities from softmax function on final hidden layer signals Z
+    
     % reusing lots of code from softmax_regression_vec.m...
     n = size(Z, 1); % rows = classes
     m = size(Z, 2); % cols = data examples 
@@ -109,16 +114,39 @@ function [cost, delta] = calc_cost_and_output_delta(Z, y)
     
     % CANNOT fix weights for last class to 0 ("zero energy level")! not without changing initialize_weights()... meh
     p_unnormalized = exp(Z);
-    P = bsxfun(@rdivide, p_unnormalized, sum(p_unnormalized, 1));
-    logP = log(P);    
+    pred_prob = bsxfun(@rdivide, p_unnormalized, sum(p_unnormalized, 1));    
+end
+
+
+
+function cost = calc_cost(P, y)
+    assert(size(P, 1) == 10, 'Not using 10-digit data??');
+
+    % calculates cost J(theta)
+    logP = log(P);   
     
     % the slick "indicator function" from softmax_regression_vec.m
     % annoyingly, y = labels is a COLUMN vector here, but it was a ROW vector in softmax_regression_vec
-    observed = sub2ind(size(logP), y', 1:m);    
-    cost = -sum(logP( observed )); 
-    
+    cost = -sum(logP( observed(logP, y) )); 
+end
+
+
+
+function obs = observed(M, y)
+    % inputs
+    %   M = (n x m) matrix for m examples
+    %   y = (m x 1) vector. each entry is the observed row of the mth example
+    % output
+    %   obs = (1 x m) vector = indices of the observed entries in M
+    obs = sub2ind(size(M), y', 1:size(M, 2));
+end
+
+
+
+function delta = calc_output_delta(P, y)
     % SIMILAR to softmax_regression_vec.m, but there is no multiplication by X or summation over examples.
     delta = P;
-    delta(observed) = delta(observed) - 1; % inspired by civilstat
-
+    
+    obs = observed(P, y);
+    delta(obs) = delta(obs) - 1; % inspired by civilstat
 end
