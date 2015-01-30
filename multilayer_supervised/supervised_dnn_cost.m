@@ -23,6 +23,7 @@ hAct = cell(numHidden+1, 1);    % activations. last layer is stored as pred_prob
 gradStack = params2stack(grad, ei);
 
 nl = numHidden+2;
+m = size(data, 2); % number of data examples
 Z = cell(nl, 1);
 delta = cell(nl, 1);
 
@@ -71,6 +72,17 @@ delta = cell(nl, 1);
 
 %% compute gradients using backpropagation
     delta{nl} = calc_output_delta(pred_prob, labels);
+    
+    % ok, it's gonna be much easier than the ml homework if they're just gonna give it to us in the tutorial...
+    for l=nl-1:2
+        delta{l} = (stack{l}.W' * delta{l+1}) .* fprime(Z{l}, hAct{l}, ei);
+    end
+    
+    % the hardest part of this is grokking their data structures...
+    for l=1:nl-1 % note limits!! needed to match up with their Step 4.   
+        gradStack{l}.W = (delta{l+1} * (hAct{l})') / m; % Notepad++ didn't like {}'
+        gradStack{l}.b = mean(delta{l+1}, 2);
+    end
 
 
 %% compute weight penalty cost and gradient for non-bias terms
@@ -103,6 +115,19 @@ end
 
 
 
+function fp = fprime(Z, f, ei)
+    % derivative of hidden unit nonlinearity. tanh/sigmoid can both exploit precomputed f value.
+    switch ei.activation_fun
+        case 'logistic'
+            fp = f .* (1-f);
+        otherwise
+            message = sprintf('Unknown activation function: %s\n', ei.activation_fun);
+            assert(false, message);
+    end
+end
+
+
+
 function pred_prob = calc_softmax_probabilities(Z)
     % computes predicted class probabilities from softmax function on final hidden layer signals Z
     
@@ -126,7 +151,7 @@ function cost = calc_cost(P, y)
     
     % the slick "indicator function" from softmax_regression_vec.m
     % annoyingly, y = labels is a COLUMN vector here, but it was a ROW vector in softmax_regression_vec
-    cost = -sum(logP( observed(logP, y) )); 
+    cost = -mean(logP( observed(logP, y) )); 
 end
 
 
