@@ -87,8 +87,8 @@ DEBUG = ei.DEBUG;
 
 %% compute weight penalty cost and gradient for non-bias terms
     for l=1:nl-1
-        cost = cost + (ei.lambda/2) * sum(sum(stack{l}.W.^2));
-        gradStack{l}.W = gradStack{l}.W + ei.lambda*stack{l}.W;
+        cost = cost + (ei.lambda/(2*m)) * sum(sum(stack{l}.W.^2));
+        gradStack{l}.W = gradStack{l}.W + (ei.lambda/m)*stack{l}.W;
     end
 
 
