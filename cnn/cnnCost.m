@@ -69,9 +69,11 @@ activations = zeros(convDim,convDim,numFilters,numImages);
 
 % outputDim x outputDim x numFilters x numImages tensor for storing
 % subsampled activations
-activationsPooled = zeros(outputDim,outputDim,numFilters,numImages);
+%activationsPooled = zeros(outputDim,outputDim,numFilters,numImages);
 
-%%% YOUR CODE HERE %%%
+%%% MY CODE HERE %%%
+    activationsPooled = cnnPool(poolDim, cnnConvolve(filterDim, numFilters, images, Wc, bc));
+    assert(isequal(size(activationsPooled), [outputDim,outputDim,numFilters,numImages]));
 
 % Reshape activations into 2-d matrix, hiddenSize x numImages,
 % for Softmax layer
@@ -85,9 +87,12 @@ activationsPooled = reshape(activationsPooled,[],numImages);
 
 % numClasses x numImages for storing probability that each image belongs to
 % each class.
-probs = zeros(numClasses,numImages);
+%probs = zeros(numClasses,numImages);
 
-%%% YOUR CODE HERE %%%
+%%% MY CODE HERE %%%
+    % from supervised_dnn_cost.m
+    probs = calc_softmax_probabilities(bsxfun(@plus, Wd*activationsPooled, bd));
+    assert(isequal(size(probs), [numClasses,numImages]));
 
 %%======================================================================
 %% STEP 1b: Calculate Cost
@@ -132,4 +137,17 @@ end;
 %% Unroll gradient into grad vector for minFunc
 grad = [Wc_grad(:) ; Wd_grad(:) ; bc_grad(:) ; bd_grad(:)];
 
+end
+
+
+
+
+function pred_prob = calc_softmax_probabilities(Z)  
+    % input: Z(1:output_classes, 1:num_examples)
+    % output: pred_prob(1:output_classes, 1:num_examples)
+    % uh, copy/pasted from supervised_dnn_cost.m...
+        % too short to merit its own file...
+        % it was largely based on ex1c_softmax in the first place
+    p_unnormalized = exp(Z);
+    pred_prob = bsxfun(@rdivide, p_unnormalized, sum(p_unnormalized, 1));    
 end
