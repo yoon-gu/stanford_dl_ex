@@ -43,7 +43,7 @@ b = rand(numFilters);
 %% Use only the first 8 images for testing
 convImages = images(:, :, 1:8); 
 
-% NOTE: Implement cnnConvolve in cnnConvolve.m first!
+% Implemented cnnConvolve in cnnConvolve.m first!
 convolvedFeatures = cnnConvolve(filterDim, numFilters, convImages, W, b);
 
 %% STEP 1b: Checking your convolution
@@ -86,7 +86,7 @@ disp('Congratulations! Your convolution code passed the test.');
 %  Implement pooling in the function cnnPool in cnnPool.m
 
 %% STEP 2a: Implement pooling
-% NOTE: Implement cnnPool in cnnPool.m first!
+% Implemented cnnPool in cnnPool.m first!
 pooledFeatures = cnnPool(poolDim, convolvedFeatures);
 
 %% STEP 2b: Checking your pooling
