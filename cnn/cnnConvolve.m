@@ -47,7 +47,7 @@ for imageNum = 1:numImages
     %%% YOUR CODE HERE %%%
 
     % Flip the feature matrix because of the definition of convolution, as explained later
-    filter = rot90(squeeze(filter),2);
+    filt = rot90(squeeze(filt),2); % filter() is a system function in Octave
       
     % Obtain the image
     im = squeeze(images(:, :, imageNum));
