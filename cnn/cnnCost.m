@@ -100,9 +100,10 @@ activationsPooled = reshape(activationsPooled,[],numImages);
 %  calculate above to evaluate the cross entropy objective.  Store your
 %  results in cost.
 
-cost = 0; % save objective into cost
+%cost = 0; % save objective into cost
 
-%%% YOUR CODE HERE %%%
+%%% MY CODE HERE %%%
+    cost = calc_cost(probs, labels);
 
 % Makes predictions given probs and returns without backproagating errors.
 if pred
@@ -150,4 +151,32 @@ function pred_prob = calc_softmax_probabilities(Z)
         % it was largely based on ex1c_softmax in the first place
     p_unnormalized = exp(Z);
     pred_prob = bsxfun(@rdivide, p_unnormalized, sum(p_unnormalized, 1));    
+end
+
+
+
+function cost = calc_cost(P, y)
+    % copy/pasted from supervised_dnn_cost.m...
+    logP = log(P);   
+    cost = -mean(logP( observed(logP, y) )); 
+end
+
+
+
+function obs = observed(P, y)
+    % inputs
+    %   M = (n x m) matrix for m examples
+    %   y = (m x 1) vector. each entry is the observed row of the mth example
+    % output
+    %   obs = (n x m) matrix with ones at observations.
+    
+    % original implementation from supervised_dnn_cost.m
+    %m = size(M, 2);
+    %assert(isequal(size(y), [m 1]));
+    %obs = sub2ind(size(M), y', 1:m);
+    
+    % the prescribed implementation for this exercise, using sparse()
+    assert(size(y, 2) == 1);
+    obs = find(sparse(y', 1:numel(y), ones(size(y'))) ~= 0);
+    
 end
