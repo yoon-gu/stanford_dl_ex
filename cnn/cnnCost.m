@@ -101,7 +101,7 @@ cost = 0; % save objective into cost
 
 % Makes predictions given probs and returns without backproagating errors.
 if pred
-    [~,preds] = max(probs,[],1);
+    [unused_,preds] = max(probs,[],1);
     preds = preds';
     grad = 0;
     return;

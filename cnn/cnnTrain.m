@@ -12,6 +12,8 @@
 %% STEP 0: Initialize Parameters and Load Data
 %  Here we initialize some parameters used for the exercise.
 
+clear all; % prevent out-of-memory errors in Octave on repeated calls
+
 % Configuration
 imageDim = 28;
 numClasses = 10;  % Number of classes (MNIST images fall into 10 classes)
@@ -95,7 +97,7 @@ testImages = reshape(testImages,imageDim,imageDim,[]);
 testLabels = loadMNISTLabels('../common/t10k-labels-idx1-ubyte');
 testLabels(testLabels==0) = 10; % Remap 0 to 10
 
-[~,cost,preds]=cnnCost(opttheta,testImages,testLabels,numClasses,...
+[unused_,cost,preds]=cnnCost(opttheta,testImages,testLabels,numClasses,...
                 filterDim,numFilters,poolDim,true);
 
 acc = sum(preds==testLabels)/length(preds);

@@ -24,8 +24,15 @@ function [opttheta] = minFuncSGD(funObj,theta,data,labels,...
 
 %%======================================================================
 %% Setup
-assert(all(isfield(options,{'epochs','alpha','minibatch'})),...
-        'Some options not defined');
+if ~isOctave()
+    assert(all(isfield(options,{'epochs','alpha','minibatch'})),...
+            'Some options not defined');
+else
+    assert(isfield(options, 'epochs'));
+    assert(isfield(options, 'alpha'));
+    assert(isfield(options, 'minibatch'));
+end
+
 if ~isfield(options,'momentum')
     options.momentum = 0.9;
 end;
@@ -69,6 +76,7 @@ for e = 1:epochs
         %%% YOUR CODE HERE %%%
         
         fprintf('Epoch %d: Cost on iteration %d is %f\n',e,it,cost);
+        if isOctave(); fflush(stdout); end
     end;
 
     % aneal learning rate by factor of two after each epoch
