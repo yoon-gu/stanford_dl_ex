@@ -17,13 +17,14 @@ imageDim = 28;         % image dimension
 filterDim = 8;          % filter dimension
 numFilters = 100;         % number of feature maps
 
-numImages = 60000;    % number of images
+%numImages = 60000;    % number of images
 
 poolDim = 3;          % dimension of pooling region
 
 % Here we load MNIST training images
 addpath ../common/;
 images = loadMNISTImages('../common/train-images-idx3-ubyte');
+numImages = size(images, 2);
 images = reshape(images,imageDim,imageDim,numImages);
 
 W = randn(filterDim,filterDim,numFilters);
@@ -48,6 +49,10 @@ convolvedFeatures = cnnConvolve(filterDim, numFilters, convImages, W, b);
 %  To ensure that you have convolved the features correctly, we have
 %  provided some code to compare the results of your convolution with
 %  activations from the sparse autoencoder
+
+if isOctave()
+    randi = @(dims)  dims(1) + round((dims(2)-dims(1)) * rand());
+end
 
 % For 1000 random points
 for i = 1:1000   
