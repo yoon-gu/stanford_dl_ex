@@ -24,16 +24,21 @@ addpath(genpath('../common/minFunc_2012/minFunc'));
 
 % dimension of input features
 ei.input_dim = 784;
-% number of output classes
+
+% number of output classes [fixed for digits task]
 ei.output_dim = 10;
+
 % sizes of all hidden layers and the output layer
-%ei.layer_sizes = [256, ei.output_dim]; % default
-ei.layer_sizes = [256, ei.output_dim];
+ei.layer_sizes = [256, ei.output_dim]; % default
+%ei.layer_sizes = [192, 64, ei.output_dim];
+
 % scaling parameter for l2 weight regularization penalty
 ei.lambda = 10;
+
 % which type of activation function to use in hidden layers
 % feel free to implement support for only the logistic sigmoid function     % this was EASY relative to all the NN bookkeeping
 ei.activation_fun = 'logistic'; % 'logistic', 'tanh', or 'rectified'
+
 % toggle my paranoid error checking
 ei.DEBUG = false; 
 if ei.DEBUG
@@ -53,7 +58,8 @@ options.display = 'iter';
 options.maxFunEvals = 1e6;
 options.Method = 'lbfgs';
 options.useMex = true; % my additions
-options.DerivativeCheck = 'off';
+options.MaxIter = 250; % add this? it's running like hours without this option... my kingdom for a pickle
+if ei.DEBUG; options.DerivativeCheck = 'on'; end
 
 %% run training
 tic;
