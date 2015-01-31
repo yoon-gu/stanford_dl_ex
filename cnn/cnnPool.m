@@ -45,17 +45,31 @@ pooledFeatures = zeros(convolvedDim / poolDim, ...
         for filterNum = 1:numFilters        
             features = convolvedFeatures(:,:,filterNum,imageNum);
             convolved = conv2(features, ones(poolDim, poolDim), 'valid');
-            subsampled = convolved(1:poolDim:convolvedDim, 1:poolDim:convolvedDim);            
+            subsampled = convolved(1:poolDim:convolvedDim, 1:poolDim:convolvedDim); % wasteful! you waste!
             pooledFeatures(:,:, filterNum, imageNum) = subsampled / (poolDim^2);
         end
     end
     
-    % alternative approach : meh
-        % get vector of blocks
+    % alternative approach : meh, would double storage requirements
+        % get vector of blocks. double loop, or...?
         % apply mean(mean()) to each block
         % reshape to matrix
     
     
+    % http://stackoverflow.com/questions/25964034/how-do-i-average-columns-block-wise
+        % reshape doesn't work, since it goes in column order...
+    
+    % http://www.mathworks.com/matlabcentral/newsreader/view_thread/17463
+    % cleaner code, but turns out to be SLOWER than conv2. colfilt() is also slow?
+    %for imageNum = 1:numImages
+    %    for filterNum = 1:numFilters
+    %        pooledFeatures(:,:, filterNum, imageNum) = blkproc( ...
+    %            convolvedFeatures(:,:,filterNum,imageNum), ...
+    %            [poolDim poolDim], ...
+    %            @(m) mean(mean(m)) ...
+    %        );
+    %    end
+    %end
 
 end
 

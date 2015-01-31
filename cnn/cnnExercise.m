@@ -98,8 +98,10 @@ expectedMatrix = [mean(mean(testMatrix(1:4, 1:4))) mean(mean(testMatrix(1:4, 5:8
                   mean(mean(testMatrix(5:8, 1:4))) mean(mean(testMatrix(5:8, 5:8))); ];
             
 testMatrix = reshape(testMatrix, 8, 8, 1, 1);
-        
+
+tic;
 pooledFeatures = squeeze(cnnPool(4, testMatrix));
+fprintf('Pooling took %f seconds.\n', toc);
 
 if ~isequal(pooledFeatures, expectedMatrix)
     disp('Pooling incorrect');
