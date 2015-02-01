@@ -15,15 +15,18 @@ display_network(x(:,randsel));
 %%================================================================
 %% Step 0b: Zero-mean the data (by row)
 %  You can make use of the mean and repmat/bsxfun functions.
+    avg = mean(x, 1); % as per tutorial: "Mean pixel intensity for each patch"
+    x = bsxfun(@minus, x, avg);
 
-%%% YOUR CODE HERE %%%
 
 %%================================================================
 %% Step 1a: Implement PCA to obtain xRot
 %  Implement PCA to obtain xRot, the matrix in which the data is expressed
 %  with respect to the eigenbasis of sigma, which is the matrix U.
+    Sigma = x * x' / size(x, 2);
+    [U, S, V] = svd(Sigma); % uh, just copying tutorial now...
+    xRot = U' * x; % "rotated version of the data
 
-%%% YOUR CODE HERE %%%
 
 %%================================================================
 %% Step 1b: Check your implementation of PCA
@@ -33,8 +36,11 @@ display_network(x(:,randsel));
 %  Write code to compute the covariance matrix, covar. 
 %  When visualised as an image, you should see a straight line across the
 %  diagonal (non-zero entries) against a blue background (zero entries).
+    covar = xRot * xRot' / size(xRot, 2);
+    
+    fprintf('Norm of off-diagonal covariance matrix elements = %g (should be tiny)\n'...
+        norm(covar - covar.*eye(size(covar))))
 
-%%% YOUR CODE HERE %%%
 
 % Visualise the covariance matrix. You should see a line across the
 % diagonal against a blue background.
