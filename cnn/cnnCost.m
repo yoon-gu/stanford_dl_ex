@@ -47,6 +47,8 @@ numImages = size(images,3); % number of images
 %bc_grad = zeros(size(bc));
 %bd_grad = zeros(size(bd));
 
+
+
 %%======================================================================
 %% STEP 1a: Forward Propagation
 %  In this step you will forward propagate the input through the
@@ -83,7 +85,6 @@ outputDim = (convDim)/poolDim; % dimension of subsampled output
 % Reshape activations into 2-d matrix, hiddenSize x numImages,
 % for Softmax layer
 activationsPooled = reshape(activationsPooled,[],numImages);
-%activations = reshape(activations, [], numImages); % this too, for backprop?
 
 %% Softmax Layer
 %  Forward propagate the pooled activations calculated above into a
@@ -100,6 +101,8 @@ activationsPooled = reshape(activationsPooled,[],numImages);
     probs = calc_softmax_probabilities(bsxfun(@plus, Wd*activationsPooled, bd));
     assert(isequal(size(probs), [numClasses,numImages]));
 
+    
+    
 %%======================================================================
 %% STEP 1b: Calculate Cost
 %  In this step you will use the labels given as input and the probs
@@ -119,6 +122,8 @@ if pred
     return;
 end;
 
+
+
 %%======================================================================
 %% STEP 1c: Backpropagation
 %  Backpropagate errors through the softmax and convolutional/subsampling
@@ -132,27 +137,14 @@ end;
 %%% MY CODE HERE %%%
     dOut = calc_output_delta(probs, labels);
     
-    ddSubsampled = Wd' * dOut; % too hard to reshape??
+    ddSubsampled = Wd' * dOut; 
     assert(isequal(size(ddSubsampled), [outputDim^2 * numFilters, numImages]));
     
-    % for correctness, first try to reshape into individual filters
-    
-    % the suspect step... ugh need pencil/paper and big monitor.
-    % well, pre-reshape activationsPooled tells you the columns of Wd are [outputDim,outputDim,numFilters].
+    % pre-reshape activationsPooled tells you the columns of Wd are [outputDim,outputDim,numFilters].
     ddSubsampled = reshape(ddSubsampled, [outputDim,outputDim,numFilters,numImages]);
     
     for filterNum = 1:numFilters
-        %startRow = 1 + (filterNum-1)*outputDim^2;
-        %endRow = startRow + outputDim^2 - 1;
-        for imageNum = 1:numImages
-        
-         %   % ugly and probably horribly inefficient, but also probably correct? nope... lower level, more error prone.
-         %   % maybe i can vectorize over imageNum?
-         %   dd(:, :, filterNum, imageNum) = kron(...
-         %       reshape(ddSubsampled(startRow:endRow, imageNum), [outputDim, outputDim]), ...
-         %       ones(poolDim) ...
-         %   ) / poolDim^2;
-        
+        for imageNum = 1:numImages        
             %a = activations(:,:,filterNum,imageNum);
             dd(:,:,filterNum, imageNum) = ... % upsample using kron(), as per instructions
                 kron(ddSubsampled(:,:,filterNum,imageNum), ones(poolDim)) / poolDim^2 ...
@@ -162,6 +154,7 @@ end;
     end
     dd = dd .* activations .* (1-activations); % faster? still seems slow...
     
+
 
 %%======================================================================
 %% STEP 1d: Gradient Calculation
@@ -178,7 +171,7 @@ end;
     bd_grad = mean(dOut, 2);
     assert(isequal(size(bd_grad), size(bd)), 'bd gradient dimensions');
    
-    % is that my only error? z = activation but a = raw image?? ugh neural network notation galore strikes again
+    % z = activation but a = raw image!! ugh neural network notation galore struck again
     for filterNum = 1:numFilters
         Wc_grad(:,:,filterNum) = zeros(filterDim);
         for imageNum = 1:numImages
