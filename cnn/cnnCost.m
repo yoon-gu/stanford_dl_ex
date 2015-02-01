@@ -161,12 +161,13 @@ end;
     
     bd_grad = mean(dOut, 2);
     assert(isequal(size(bd_grad), size(bd)), 'bd gradient dimensions');
-
+   
     for filterNum = 1:numFilters
         for imageNum = 1:numImages
-            Wc_grad(:,:,filterNum) = Wc_grad(:,:,filterNum) + ...
-                conv2(activations(:,:,filterNum,imageNum), rot90(dd(:,:,filterNum,imageNum), 2), 'valid');
+            Wc_grad(:,:,filterNum) = Wc_grad(:,:,filterNum) + ... % need squeeze() from cnnConvolve?
+                conv2(activations(:,:,filterNum,imageNum), rot90(squeeze(dd(:,:,filterNum,imageNum)), 2), 'valid');
         end
+        Wc_grad(:,:,filterNum) = Wc_grad(:,:,filterNum) / numImages;
         bc_grad(filterNum, 1) = sum(sum(sum(dd(:,:,filterNum,:)))) / numImages;
     end 
     assert(isequal(size(bc_grad), size(bc)), 'bc gradient dimensions');
