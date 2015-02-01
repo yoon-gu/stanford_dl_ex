@@ -65,19 +65,25 @@ convDim = imageDim-filterDim+1; % dimension of convolved output
 outputDim = (convDim)/poolDim; % dimension of subsampled output
 
 % convDim x convDim x numFilters x numImages tensor for storing activations
-activations = zeros(convDim,convDim,numFilters,numImages);
+%activations = zeros(convDim,convDim,numFilters,numImages);
 
 % outputDim x outputDim x numFilters x numImages tensor for storing
 % subsampled activations
 %activationsPooled = zeros(outputDim,outputDim,numFilters,numImages);
 
 %%% MY CODE HERE %%%
-    activationsPooled = cnnPool(poolDim, cnnConvolve(filterDim, numFilters, images, Wc, bc));
+    % pre-pooled activations needed for backprop
+    activations = cnnConvolve(filterDim, numFilters, images, Wc, bc);
+    assert(isequal(size(activations), [convDim,convDim,numFilters,numImages]));
+
+    % pooled (subsampled) features.
+    activationsPooled = cnnPool(poolDim, activations);
     assert(isequal(size(activationsPooled), [outputDim,outputDim,numFilters,numImages]));
 
 % Reshape activations into 2-d matrix, hiddenSize x numImages,
 % for Softmax layer
 activationsPooled = reshape(activationsPooled,[],numImages);
+%activations = reshape(activations, [], numImages); % this too, for backprop?
 
 %% Softmax Layer
 %  Forward propagate the pooled activations calculated above into a
@@ -123,7 +129,33 @@ end;
 %  Use the kron function and a matrix of ones to do this upsampling 
 %  quickly.
 
-%%% YOUR CODE HERE %%%
+%%% MY CODE HERE %%%
+    dd = calc_output_delta(probs, labels);
+    
+    dcSubsampled = Wd' * dd; 
+    dcSubsampled = reshape(dcSubsampled, [outputDim,outputDim,numFilters,numImages]);
+    
+    for filterNum = 1:numFilters
+        for imageNum = 1:numImages
+            a = activations(:,:,filterNum,imageNum);
+            dc(:,:,filterNum, imageNum) = ... % upsample using kron(), as per instructions
+                kron(dcSubsampled(:,:,filterNum,imageNum), ones(poolDim)) / poolDim^2 ...
+                .* a .* (1-a) ... % f' for sigmoid nonlinearity
+            ;
+        end
+    end
+    
+        %size(Wd) % [10 2000]
+        %size(bd)
+        %size(bc) % [20 1] - one per Wc matrix.
+        %size(Wc) % [9 9 20]; agrees with spec
+        %size(dd) % [ 10 256]
+        %size(activations) % [8000 256]
+        %size(activationsPooled) % [2000 256]. m = 2000?
+        %size(activations) % [convDim,convDim,numFilters,numImages] % need to unroll? oh boy...
+    
+
+
 
 %%======================================================================
 %% STEP 1d: Gradient Calculation
@@ -179,4 +211,13 @@ function obs = observed(P, y)
     assert(size(y, 2) == 1);
     obs = find(sparse(y', 1:numel(y), ones(size(y'))) ~= 0);
     
+end
+
+
+
+function delta = calc_output_delta(P, y)
+    % copy/pasted from supervised_dnn_cost.m...
+    delta = P;    
+    obs = observed(P, y);
+    delta(obs) = delta(obs) - 1;
 end
