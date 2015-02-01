@@ -130,21 +130,21 @@ end;
 %  quickly.
 
 %%% MY CODE HERE %%%
-    dd = calc_output_delta(probs, labels);
+    dOut = calc_output_delta(probs, labels);
     
-    dcSubsampled = Wd' * dd; 
-    dcSubsampled = reshape(dcSubsampled, [outputDim,outputDim,numFilters,numImages]);
+    ddSubsampled = Wd' * dOut; 
+    ddSubsampled = reshape(ddSubsampled, [outputDim,outputDim,numFilters,numImages]);
     
     for filterNum = 1:numFilters
         for imageNum = 1:numImages
             %a = activations(:,:,filterNum,imageNum);
-            dc(:,:,filterNum, imageNum) = ... % upsample using kron(), as per instructions
-                kron(dcSubsampled(:,:,filterNum,imageNum), ones(poolDim)) / poolDim^2 ...
+            dd(:,:,filterNum, imageNum) = ... % upsample using kron(), as per instructions
+                kron(ddSubsampled(:,:,filterNum,imageNum), ones(poolDim)) / poolDim^2 ...
                 ...%.* a .* (1-a) ... % f' for sigmoid nonlinearity
             ;
         end
     end
-    dc = dc .* activations .* (1-activations); % faster? still seems slow...
+    dd = dd .* activations .* (1-activations); % faster? still seems slow...
     
 
 %%======================================================================
@@ -156,13 +156,15 @@ end;
 %  for that filter with each image and aggregate over images.
 
 %%% MY CODE HERE %%%
-    Wd_grad = dd * activationsPooled' / numImages;
+    Wd_grad = dOut * activationsPooled' / numImages;
     assert(isequal(size(Wd_grad), size(Wd)), 'Wd gradient dimensions');
     
-    bd_grad = mean(dd, 2);
+    bd_grad = mean(dOut, 2);
     assert(isequal(size(bd_grad), size(bd)), 'bd gradient dimensions');
 
-    %assert(false, 'here - 1d. almost home free!!')
+    
+    
+    assert(false, 'here - 1d. almost home free!!')
 
 %% Unroll gradient into grad vector for minFunc
 grad = [Wc_grad(:) ; Wd_grad(:) ; bc_grad(:) ; bd_grad(:)];
