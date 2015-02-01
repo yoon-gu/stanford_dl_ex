@@ -42,7 +42,7 @@ theta = cnnInitParams(imageDim,filterDim,numFilters,poolDim,numClasses);
 %  calculation for your cnnCost.m function.  You may need to add the
 %  appropriate path or copy the file to this directory.
 
-DEBUG=true;  % set this to true to check gradient
+DEBUG=false;  % set this to true to check gradient
 if DEBUG
     % To speed up gradient checking, we will use a reduced network and
     % a debugging data set
@@ -85,8 +85,15 @@ options.minibatch = 256;
 options.alpha = 1e-1;
 options.momentum = .95;
 
+tic;
 opttheta = minFuncSGD(@(x,y,z) cnnCost(x,y,z,numClasses,filterDim,...
                       numFilters,poolDim),theta,images,labels,options);
+
+fprintf('Stochastic Gradient Descent took %f seconds.\n', toc);
+[unused_, unused_, train_preds]=cnnCost(opttheta,images,labels,numClasses,...
+    filterDim, numFilters, poolDim, true);
+fprintf('Training accuracy is %g\n', mean(train_preds == labels));
+
 
 %%======================================================================
 %% STEP 4: Test
