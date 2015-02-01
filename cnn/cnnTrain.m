@@ -90,8 +90,10 @@ opttheta = minFuncSGD(@(x,y,z) cnnCost(x,y,z,numClasses,filterDim,...
                       numFilters,poolDim),theta,images,labels,options);
 
 fprintf('Stochastic Gradient Descent took %f seconds.\n', toc);
-[unused_, unused_, train_preds]=cnnCost(opttheta,images,labels,numClasses,...
-    filterDim, numFilters, poolDim, true);
+%[unused_, unused_, train_preds]=cnnCost(opttheta,images,labels,numClasses,...
+%    filterDim, numFilters, poolDim, true);
+train_preds = predict(opttheta,images,labels,numClasses,filterDim,...
+    numFilters,poolDim,true);
 fprintf('Training accuracy is %g\n', mean(train_preds == labels));
 
 
@@ -105,7 +107,9 @@ testImages = reshape(testImages,imageDim,imageDim,[]);
 testLabels = loadMNISTLabels('../common/t10k-labels-idx1-ubyte');
 testLabels(testLabels==0) = 10; % Remap 0 to 10
 
-[unused_,cost,preds]=cnnCost(opttheta,testImages,testLabels,numClasses,...
+%[unused_,cost,preds]=cnnCost(opttheta,testImages,testLabels,numClasses,...
+%                filterDim,numFilters,poolDim,true);
+train_preds = predict(opttheta,testImages,testLabels,numClasses,...
                 filterDim,numFilters,poolDim,true);
 
 acc = sum(preds==testLabels)/length(preds);
