@@ -90,7 +90,9 @@ display_network(x(:,randsel));
 %  xPCAWhite. 
 
 epsilon = 1e-1; 
-%%% YOUR CODE HERE %%%
+    % note that you do this on the ENTIRE xRot matrix, NOT just the k-subspace.
+    % hence the need for "regularisation"?
+    xPCAWhite = bsxfun(@rdivide, xRot, sqrt(diag(S) + epsilon));
 
 %% Step 4b: Check your implementation of PCA whitening 
 %  Check your implementation of PCA whitening with and without regularisation. 
@@ -106,8 +108,8 @@ epsilon = 1e-1;
 %  With regularisation, you should see a red line that slowly turns
 %  blue across the diagonal, corresponding to the one entries slowly
 %  becoming smaller.
+    covar = xPCAWhite * xPCAWhite' / size(xPCAWhite, 2);
 
-%%% YOUR CODE HERE %%%
 
 % Visualise the covariance matrix. You should see a red line across the
 % diagonal against a blue background.
@@ -119,8 +121,8 @@ imagesc(covar);
 %  Now implement ZCA whitening to produce the matrix xZCAWhite. 
 %  Visualise the data and compare it to the raw data. You should observe
 %  that whitening results in, among other things, enhanced edges.
+    xZCAWhite = U * xPCAWhite;
 
-%%% YOUR CODE HERE %%%
 
 % Visualise the data, and compare it to the raw data.
 % You should observe that the whitened images have enhanced edges.
