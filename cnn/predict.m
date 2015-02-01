@@ -12,8 +12,5 @@ function preds = predict(opttheta,images,labels,varargin)
         batch = start:start+batchSize-1;
         [unused_, unused_, batchPreds] = cnnCost(opttheta, images(:,:,batch), labels(batch), varargin{:});
         preds = [preds; batchPreds];
-        
-        disp(start)
-        if isOctave(); fflush(stdout); end
     end
 end
