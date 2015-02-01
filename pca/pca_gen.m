@@ -5,6 +5,8 @@
 %  the raw image data from the kth 12x12 image patch sampled.
 %  You do not need to change the code below.
 
+close all;
+clear all;
 addpath(genpath('../common'))
 x = loadMNISTImages('../common/train-images-idx3-ubyte');
 figure('name','Raw images');
@@ -38,21 +40,22 @@ display_network(x(:,randsel));
 %  diagonal (non-zero entries) against a blue background (zero entries).
     covar = xRot * xRot' / size(xRot, 2);
     
-    fprintf('Norm of off-diagonal covariance matrix elements = %g (should be tiny)\n'...
+    fprintf('Norm of off-diagonal covariance matrix elements = %g (should be tiny)\n',...
         norm(covar - covar.*eye(size(covar))))
-
 
 % Visualise the covariance matrix. You should see a line across the
 % diagonal against a blue background.
 figure('name','Visualisation of covariance matrix');
 imagesc(covar);
 
+
 %%================================================================
 %% Step 2: Find k, the number of components to retain
 %  Write code to determine k, the number of components to retain in order
 %  to retain at least 99% of the variance.
+    k = min(find(cumsum(diag(S)) / sum(diag(S)) >= 0.75));
+    fprintf('k = %d (n = %d)\n', k, size(S, 1))
 
-%%% YOUR CODE HERE %%%
 
 %%================================================================
 %% Step 3: Implement PCA with dimension reduction
@@ -67,8 +70,9 @@ imagesc(covar);
 %  Visualise the data and compare it to the raw data. You will observe that
 %  there is little loss due to throwing away the principal components that
 %  correspond to dimensions with low variation.
+    Upca = U(:,1:k);
+    xHat = Upca * Upca' * x;
 
-%%% YOUR CODE HERE %%%
 
 % Visualise the data, and compare it to the raw data
 % You should observe that the raw and processed data are of comparable quality.
