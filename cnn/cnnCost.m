@@ -42,7 +42,7 @@ numImages = size(images,3); % number of images
                         poolDim,numClasses);
 
 % Same sizes as Wc,Wd,bc,bd. Used to hold gradient w.r.t above params.
-Wc_grad = zeros(size(Wc));
+%Wc_grad = zeros(size(Wc));
 %Wd_grad = zeros(size(Wd));
 %bc_grad = zeros(size(bc));
 %bd_grad = zeros(size(bd));
@@ -132,11 +132,27 @@ end;
 %%% MY CODE HERE %%%
     dOut = calc_output_delta(probs, labels);
     
-    ddSubsampled = Wd' * dOut; 
+    ddSubsampled = Wd' * dOut; % too hard to reshape??
+    assert(isequal(size(ddSubsampled), [outputDim^2 * numFilters, numImages]));
+    
+    % for correctness, first try to reshape into individual filters
+    
+    % the suspect step... ugh need pencil/paper and big monitor.
+    % well, pre-reshape activationsPooled tells you the columns of Wd are [outputDim,outputDim,numFilters].
     ddSubsampled = reshape(ddSubsampled, [outputDim,outputDim,numFilters,numImages]);
     
     for filterNum = 1:numFilters
+        %startRow = 1 + (filterNum-1)*outputDim^2;
+        %endRow = startRow + outputDim^2 - 1;
         for imageNum = 1:numImages
+        
+         %   % ugly and probably horribly inefficient, but also probably correct? nope... lower level, more error prone.
+         %   % maybe i can vectorize over imageNum?
+         %   dd(:, :, filterNum, imageNum) = kron(...
+         %       reshape(ddSubsampled(startRow:endRow, imageNum), [outputDim, outputDim]), ...
+         %       ones(poolDim) ...
+         %   ) / poolDim^2;
+        
             %a = activations(:,:,filterNum,imageNum);
             dd(:,:,filterNum, imageNum) = ... % upsample using kron(), as per instructions
                 kron(ddSubsampled(:,:,filterNum,imageNum), ones(poolDim)) / poolDim^2 ...
@@ -162,14 +178,17 @@ end;
     bd_grad = mean(dOut, 2);
     assert(isequal(size(bd_grad), size(bd)), 'bd gradient dimensions');
    
+    % is that my only error? z = activation but a = raw image?? ugh neural network notation galore strikes again
     for filterNum = 1:numFilters
+        Wc_grad(:,:,filterNum) = zeros(filterDim);
         for imageNum = 1:numImages
-            Wc_grad(:,:,filterNum) = Wc_grad(:,:,filterNum) + ... % need squeeze() from cnnConvolve?
-                conv2(activations(:,:,filterNum,imageNum), rot90(squeeze(dd(:,:,filterNum,imageNum)), 2), 'valid');
+            Wc_grad(:,:,filterNum) = Wc_grad(:,:,filterNum) + ... % need squeeze() from cnnConvolve? arcane arcane matlab...
+                conv2(images(:,:,imageNum), rot90(squeeze(dd(:,:,filterNum,imageNum)), 2), 'valid');
         end
         Wc_grad(:,:,filterNum) = Wc_grad(:,:,filterNum) / numImages;
         bc_grad(filterNum, 1) = sum(sum(sum(dd(:,:,filterNum,:)))) / numImages;
     end 
+    assert(isequal(size(Wc_grad), size(Wc)), 'Wc gradient dimensions');
     assert(isequal(size(bc_grad), size(bc)), 'bc gradient dimensions');
 
 %% Unroll gradient into grad vector for minFunc
