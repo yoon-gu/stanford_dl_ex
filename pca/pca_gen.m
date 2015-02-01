@@ -8,6 +8,7 @@
 addpath(genpath('../common'))
 x = loadMNISTImages('../common/train-images-idx3-ubyte');
 figure('name','Raw images');
+if isOctave(); randi = @(imax, sz1, sz2) 1 + round((imax-1)*rand(sz1, sz2)); end
 randsel = randi(size(x,2),200,1); % A random selection of samples for visualization
 display_network(x(:,randsel));
 
