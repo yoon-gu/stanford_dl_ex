@@ -43,9 +43,9 @@ numImages = size(images,3); % number of images
 
 % Same sizes as Wc,Wd,bc,bd. Used to hold gradient w.r.t above params.
 Wc_grad = zeros(size(Wc));
-Wd_grad = zeros(size(Wd));
+%Wd_grad = zeros(size(Wd));
 bc_grad = zeros(size(bc));
-bd_grad = zeros(size(bd));
+%bd_grad = zeros(size(bd));
 
 %%======================================================================
 %% STEP 1a: Forward Propagation
@@ -137,25 +137,15 @@ end;
     
     for filterNum = 1:numFilters
         for imageNum = 1:numImages
-            a = activations(:,:,filterNum,imageNum);
+            %a = activations(:,:,filterNum,imageNum);
             dc(:,:,filterNum, imageNum) = ... % upsample using kron(), as per instructions
                 kron(dcSubsampled(:,:,filterNum,imageNum), ones(poolDim)) / poolDim^2 ...
-                .* a .* (1-a) ... % f' for sigmoid nonlinearity
+                ...%.* a .* (1-a) ... % f' for sigmoid nonlinearity
             ;
         end
     end
+    dc = dc .* activations .* (1-activations); % faster? still seems slow...
     
-        %size(Wd) % [10 2000]
-        %size(bd)
-        %size(bc) % [20 1] - one per Wc matrix.
-        %size(Wc) % [9 9 20]; agrees with spec
-        %size(dd) % [ 10 256]
-        %size(activations) % [8000 256]
-        %size(activationsPooled) % [2000 256]. m = 2000?
-        %size(activations) % [convDim,convDim,numFilters,numImages] % need to unroll? oh boy...
-    
-
-
 
 %%======================================================================
 %% STEP 1d: Gradient Calculation
@@ -165,7 +155,14 @@ end;
 %  a filter in the convolutional layer, convolve the backpropagated error
 %  for that filter with each image and aggregate over images.
 
-%%% YOUR CODE HERE %%%
+%%% MY CODE HERE %%%
+    Wd_grad = dd * activationsPooled' / numImages;
+    assert(isequal(size(Wd_grad), size(Wd)), 'Wd gradient dimensions');
+    
+    bd_grad = mean(dd, 2);
+    assert(isequal(size(bd_grad), size(bd)), 'bd gradient dimensions');
+
+    %assert(false, 'here - 1d. almost home free!!')
 
 %% Unroll gradient into grad vector for minFunc
 grad = [Wc_grad(:) ; Wd_grad(:) ; bc_grad(:) ; bd_grad(:)];
