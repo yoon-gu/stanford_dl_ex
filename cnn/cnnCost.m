@@ -44,7 +44,7 @@ numImages = size(images,3); % number of images
 % Same sizes as Wc,Wd,bc,bd. Used to hold gradient w.r.t above params.
 Wc_grad = zeros(size(Wc));
 %Wd_grad = zeros(size(Wd));
-bc_grad = zeros(size(bc));
+%bc_grad = zeros(size(bc));
 %bd_grad = zeros(size(bd));
 
 %%======================================================================
@@ -162,9 +162,14 @@ end;
     bd_grad = mean(dOut, 2);
     assert(isequal(size(bd_grad), size(bd)), 'bd gradient dimensions');
 
-    
-    
-    assert(false, 'here - 1d. almost home free!!')
+    for filterNum = 1:numFilters
+        for imageNum = 1:numImages
+            Wc_grad(:,:,filterNum) = Wc_grad(:,:,filterNum) + ...
+                conv2(activations(:,:,filterNum,imageNum), rot90(dd(:,:,filterNum,imageNum), 2), 'valid');
+        end
+        bc_grad(filterNum, 1) = sum(sum(sum(dd(:,:,filterNum,:)))) / numImages;
+    end 
+    assert(isequal(size(bc_grad), size(bc)), 'bc gradient dimensions');
 
 %% Unroll gradient into grad vector for minFunc
 grad = [Wc_grad(:) ; Wd_grad(:) ; bc_grad(:) ; bd_grad(:)];
