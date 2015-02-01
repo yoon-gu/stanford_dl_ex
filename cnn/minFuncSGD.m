@@ -34,7 +34,7 @@ else
 end
 
 if ~isfield(options,'momentum')
-    options.momentum = 0.9;
+    options.momentum = 0.9;         % thus mom and options.momentum are the tutorial's 'gamma'
 end;
 epochs = options.epochs;
 alpha = options.alpha;
@@ -73,7 +73,10 @@ for e = 1:epochs
         % Then update the current weights theta according to the
         % sgd update rule
         
-        %%% YOUR CODE HERE %%%
+        % really? after that horrifically long backprop, finish with a 2-liner?
+        %theta = theta - alpha*grad; % no momentum
+        velocity = velocity*mom + alpha*grad; % is that IT??
+        theta = theta - velocity;
         
         fprintf('Epoch %d: Cost on iteration %d is %f\n',e,it,cost);
         if isOctave(); fflush(stdout); end
