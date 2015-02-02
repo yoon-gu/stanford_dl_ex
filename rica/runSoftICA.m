@@ -5,7 +5,7 @@ addpath(genpath('../common/')) % path to minfunc
 %% These parameters should give you sane results. We recommend experimenting
 % with these values after you have a working solution.
 global params;
-params.m=10000; % num patches
+params.m=100; % num patches
 params.patchWidth=9; % width of a patch
 params.n=params.patchWidth^2; % dimensionality of input to RICA
 params.lambda = 0.0005; % sparsity cost
@@ -36,7 +36,7 @@ options.MaxFunEvals = Inf;
 options.MaxIter = 500;
 %options.display = 'off';
 options.outputFcn = @showBases;
-options.DerivativeCheck = 'off';
+options.DerivativeCheck = 'on';
 
 % initialize with random weights
 randTheta = randn(params.numFeatures,params.n)*0.01; % 1/sqrt(params.n);

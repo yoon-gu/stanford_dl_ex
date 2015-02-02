@@ -6,7 +6,7 @@ epsilon = 1e-4;
 
 % x is the input patch data of size
 % z is the ZCA transformed data. The dimenison of z = x.
-    avg = mean(x, 1); % as per tutorial: "Mean pixel intensity for each patch"
+    avg = mean(x, 1); % can't ignore for unnatural images like digits?
     x = bsxfun(@minus, x, avg);
     Sigma = x * x' / size(x, 2);
     [U, S, V] = svd(Sigma);
