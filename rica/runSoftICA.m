@@ -1,12 +1,19 @@
 %% We will use minFunc for this exercise, but you can use your
 % own optimizer of choice
 clear all;
+close all; % only became important once the code started succeeding
 addpath(genpath('../common/')) % path to minfunc
 %% These parameters should give you sane results. We recommend experimenting
 % with these values after you have a working solution.
 global params;
-params.m=100; % num patches
-params.patchWidth=9; % width of a patch
+DEBUG = true;
+if DEBUG
+    params.m = 100;
+    params.patchWidth = 3;
+else
+    params.m=10000;% num patches
+    params.patchWidth=9;% width of a patch
+end
 params.n=params.patchWidth^2; % dimensionality of input to RICA
 params.lambda = 0.0005; % sparsity cost
 params.numFeatures = 50; % number of filter banks to learn
@@ -36,12 +43,26 @@ options.MaxFunEvals = Inf;
 options.MaxIter = 500;
 %options.display = 'off';
 options.outputFcn = @showBases;
-options.DerivativeCheck = 'on';
 
 % initialize with random weights
 randTheta = randn(params.numFeatures,params.n)*0.01; % 1/sqrt(params.n);
 randTheta = randTheta ./ repmat(sqrt(sum(randTheta.^2,2)), 1, size(randTheta,2));
 randTheta = randTheta(:);
+
+% check gradients numerically - from cnn/computeNumericalGradient.m
+if DEBUG
+    options.DerivativeCheck = 'off'; % not displaying results for regularization term??
+
+    [unused_, grad] = softICACost(randTheta, x, params);    
+    addpath ../cnn
+    numGrad = computeNumericalGradient( @(theta) softICACost(theta, x, params), randTheta );
+ 
+    disp([numGrad grad]);
+    diff = norm(numGrad-grad)/norm(numGrad+grad);
+    disp(diff); 
+    assert(diff < 1e-6,...
+        'Difference too large. Check your gradient computation again');    
+end
 
 % optimize
 [opttheta, cost, exitflag] = minFunc( @(theta) softICACost(theta, x, params), randTheta, options); % Use x or xw

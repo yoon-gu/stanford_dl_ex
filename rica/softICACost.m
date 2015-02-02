@@ -14,11 +14,30 @@ W = l2rowscaled(W, 1);
     %size(W) % 50 features x 81 pixels
     %size(x) % 81 pixels x 10000 examples (patches)
     %params    
-    %m = size(x, 2);
-    reconstructionError = W'*W*x - x;
-    cost = 0.5*sum(sum(reconstructionError.^2));  % not dividing by # examples because tutorial doesn't
-    Wgrad = W*(reconstructionError)*x' + (W*x)*(reconstructionError)'; % really, just copy their one-liner / 2??
+    z2 = W*x;
+    reconstructionError = W'*z2 - x;
+    softPenalties = l1norm(z2);
+    
+    % not dividing by # examples because tutorial doesn't do that
+    cost = params.lambda*sum(softPenalties) + 0.5*sum(sum(reconstructionError.^2));  
+    
+    % unvectorized, finally correct    
+    %for i = 1:size(x, 2)
+    %    Wgrad = Wgrad + params.lambda*(W*x(:,i)*x(:,i)' / softPenalties(i));
+    %end % vectorizing matlab code is SO annoyingly stupid...
+    Wgrad = params.lambda * z2*bsxfun(@rdivide, x, softPenalties)' + ... % this matrix derivative checks numerically
+        W*(reconstructionError)*x' + (z2)*(reconstructionError)'; % really, just copy their one-liner / 2??
 
 % unproject gradient for minFunc
 grad = l2rowscaledg(Wold, W, Wgrad, 1);
 grad = grad(:);
+
+end
+
+
+
+function L1 = l1norm(v)
+    % "In this exercise, we find epsilon = 0.01 to work well."
+    L1 = sqrt(sum(v.^2, 1) + 0.01);
+    %L1 = 0.5*sum(v.^2, 1);% L2 works fine... Wgrad = params.lambda*W*x*x'
+end
