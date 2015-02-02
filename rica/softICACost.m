@@ -3,6 +3,7 @@ function [cost,grad] = softICACost(theta, x, params)
 
 % unpack weight matrix
 W = reshape(theta, params.numFeatures, params.n);
+Wgrad = zeros(size(W));
 
 % project weights to norm ball (prevents degenerate bases)
 Wold = W;
