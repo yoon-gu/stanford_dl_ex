@@ -36,6 +36,7 @@ options.MaxFunEvals = Inf;
 options.MaxIter = 500;
 %options.display = 'off';
 options.outputFcn = @showBases;
+options.DerivativeCheck = 'off';
 
 % initialize with random weights
 randTheta = randn(params.numFeatures,params.n)*0.01; % 1/sqrt(params.n);
