@@ -13,6 +13,10 @@ patches = zeros(patchSize*patchSize, numPatches);
 maxWidth = imWidth - patchSize + 1;
 maxHeight = imHeight - patchSize + 1;
 
+if isOctave()
+    randi = @(imax)  1 + round((imax-1) * rand());
+end
+
 % Sample!
 for num = 1:numPatches
     x = randi(maxHeight);
