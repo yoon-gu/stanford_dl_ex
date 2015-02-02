@@ -6,5 +6,10 @@ epsilon = 1e-4;
 
 % x is the input patch data of size
 % z is the ZCA transformed data. The dimenison of z = x.
-
-%%% YOUR CODE HERE %%%
+    avg = mean(x, 1); % as per tutorial: "Mean pixel intensity for each patch"
+    x = bsxfun(@minus, x, avg);
+    Sigma = x * x' / size(x, 2);
+    [U, S, V] = svd(Sigma);
+    xRot = U' * x;
+    xPCAWhite = bsxfun(@rdivide, xRot, sqrt(diag(S) + epsilon));
+    Z = U * xPCAWhite; % xZCAWhite
