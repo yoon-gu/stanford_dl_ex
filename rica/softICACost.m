@@ -11,9 +11,6 @@ W = l2rowscaled(W, 1);
     % the 2 lines above are ignorable preprocessing that gets popped before returning?
 
     % backprop was done ANALYTICALLY in tutorial    
-    %size(W) % 50 features x 81 pixels
-    %size(x) % 81 pixels x 10000 examples (patches)
-    %params    
     z2 = W*x;
     reconstructionError = W'*z2 - x;
     softPenalties = l1norm(z2);
@@ -39,5 +36,4 @@ end
 function L1 = l1norm(v)
     % "In this exercise, we find epsilon = 0.01 to work well."
     L1 = sqrt(sum(v.^2, 1) + 0.01);
-    %L1 = 0.5*sum(v.^2, 1);% L2 works fine... Wgrad = params.lambda*W*x*x'
 end

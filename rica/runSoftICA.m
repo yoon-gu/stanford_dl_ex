@@ -6,7 +6,7 @@ addpath(genpath('../common/')) % path to minfunc
 %% These parameters should give you sane results. We recommend experimenting
 % with these values after you have a working solution.
 global params;
-DEBUG = true;
+DEBUG = false;
 if DEBUG
     params.m = 100;
     params.patchWidth = 3;
