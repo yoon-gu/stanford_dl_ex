@@ -35,5 +35,6 @@ end
 
 function L1 = l1norm(v)
     % "In this exercise, we find epsilon = 0.01 to work well."
-    L1 = sqrt(sum(v.^2, 1) + 0.01);
+    global params;
+    L1 = sqrt(sum(v.^2, 1) + params.epsilon);
 end
