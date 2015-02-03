@@ -19,12 +19,18 @@ close all;
 addpath(genpath('..'))
 addpath ../common; % for isOctave()
 imgSize = 28;
+numPatches = 200000;
 global params;
 params.patchWidth=9;           % width of a patch
 params.n=params.patchWidth^2;   % dimensionality of input to RICA
 params.lambda = 0.0005;   % sparsity cost
 params.numFeatures = 32; % number of filter banks to learn
 params.epsilon = 1e-2;   
+
+DEBUG = false;
+if DEBUG
+    numPatches = 2000;
+end
 
 %% ======================================================================
 %  STEP 1: Load data from the MNIST database
@@ -38,15 +44,15 @@ mnistData   = loadMNISTImages('../common/train-images-idx3-ubyte');
 mnistLabels = loadMNISTLabels('../common/train-labels-idx1-ubyte');
 
 numExamples = size(mnistData, 2);
-% 50000 of the data are pretended to be unlabelled
+% most of the data are pretended to be unlabelled
 numUnlabeled = round(numExamples*5/6);
-unlabeledSet = 1:numUnlabeled; %50000;
+unlabeledSet = 1:numUnlabeled; 
 unlabeledData = mnistData(:, unlabeledSet);
 
 % the rest are equally splitted into labelled train and test data
 numLabeled = numExamples - numUnlabeled;
-trainSet = (numUnlabeled + 1) : (numUnlabeled + round(numLabeled/2)); %50001:55000;
-testSet = (numUnlabeled + round(numLabeled/2) + 1) : (numExamples); %55001:60000;
+trainSet = (numUnlabeled + 1) : (numUnlabeled + round(numLabeled/2)); 
+testSet = (numUnlabeled + round(numLabeled/2) + 1) : (numExamples); 
 trainData   = mnistData(:, trainSet);
 trainLabels = mnistLabels(trainSet)' + 1; % Shift Labels to the Range 1-10
 % only keep digits 0-4, so that unlabelled dataset has different distribution
@@ -79,7 +85,7 @@ randTheta = randTheta ./ repmat(sqrt(sum(randTheta.^2,2)), 1, size(randTheta,2))
 randTheta = randTheta(:);
 
 % subsample random patches from the unlabelled+training data
-patches = samplePatches([unlabeledData,trainData],params.patchWidth,200000);
+patches = samplePatches([unlabeledData,trainData],params.patchWidth,numPatches);
 
 %configure minFunc
 options.Method = 'lbfgs';
