@@ -20,7 +20,6 @@ close all;
 %  change the parameters below.
 addpath(genpath('..')) % apparently this adds all subdirectories too (should've noticed from minFunc)
 imgSize = 28;
-%numPatches = 200000;
 global params;
 params.patchWidth=9;           % width of a patch
 params.n=params.patchWidth^2;   % dimensionality of input to RICA
@@ -29,12 +28,12 @@ params.numFeatures = 32; % number of filter banks to learn
 params.epsilon = 1e-2;   
 params.DEBUG = true;
 
-if ~isOctave(); options.useMex = false; end
+if ~isOctave(); options.useMex = false; end % Octave and MATLAB mex files can't commingle...can they?
 
 DEBUG = params.DEBUG;
 if DEBUG
-    numPatches = 2000;
-    fractionUnlabeled = 0.99;
+    numPatches = 50000; % 2000 to debug RICA syntax, 50000 to debug correctness (~10 sec! cache thrashing?)...
+    fractionUnlabeled = 0.99; % blow through supervised stage to test syntax
 else
     numPatches = 200000;
     fractionUnlabeled = 5/6;
@@ -80,7 +79,7 @@ testLabels(removeSet) = [];
 
 % Output Some Statistics
 fprintf('# examples in unlabeled set: %d\n', size(unlabeledData, 2));
-fprintf('# examples in supervised training set: %d\n\n', size(trainData, 2));
+fprintf('# examples in supervised training set: %d\n', size(trainData, 2));
 fprintf('# examples in supervised testing set: %d\n\n', size(testData, 2));
 if isOctave(); fflush(stdout); end
 
@@ -113,7 +112,7 @@ if DEBUG; options.MaxIter = 10; end
     % Apply ZCA
     [patches, V] = zca2(patches); 
     
-    % Normalize each patch
+    % Normalize each patch - should i not do this?? still don't really understand RICA...
     m = sqrt(sum(patches.^2) + (1e-8)); 
     x = bsxfunwrap(@rdivide,patches,m);
     
