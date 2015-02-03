@@ -37,16 +37,16 @@ params.epsilon = 1e-2;
 mnistData   = loadMNISTImages('../common/train-images-idx3-ubyte');
 mnistLabels = loadMNISTLabels('../common/train-labels-idx1-ubyte');
 
-numExamples = size(mnistData, 2)
+numExamples = size(mnistData, 2);
 % 50000 of the data are pretended to be unlabelled
-unlabeledSet = 1:50000;
+numUnlabeled = round(numExamples*5/6);
+unlabeledSet = 1:numUnlabeled; %50000;
 unlabeledData = mnistData(:, unlabeledSet);
 
 % the rest are equally splitted into labelled train and test data
-
-
-trainSet = 50001:55000;
-testSet = 55001:60000;
+numLabeled = numExamples - numUnlabeled;
+trainSet = (numUnlabeled + 1) : (numUnlabeled + round(numLabeled/2)); %50001:55000;
+testSet = (numUnlabeled + round(numLabeled/2) + 1) : (numExamples); %55001:60000;
 trainData   = mnistData(:, trainSet);
 trainLabels = mnistLabels(trainSet)' + 1; % Shift Labels to the Range 1-10
 % only keep digits 0-4, so that unlabelled dataset has different distribution
