@@ -29,6 +29,8 @@ params.numFeatures = 32; % number of filter banks to learn
 params.epsilon = 1e-2;   
 params.DEBUG = true;
 
+if ~isOctave(); options.useMex = false; end
+
 DEBUG = params.DEBUG;
 if DEBUG
     numPatches = 2000;
@@ -118,7 +120,7 @@ if DEBUG; options.MaxIter = 10; end
     % optimize (train RICA)
     tic;
     opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
-    fprintf('RICA training time (sec): %g\n', toc);
+    fprintf('RICA unsupervised training time (sec): %g\n', toc);
     if isOctave(); fflush(stdout); end
 
 % reshape visualize weights
@@ -139,14 +141,18 @@ W = permute(W, [2,3,1]);
 
 %  setting up convolutional feed-forward. You do need to modify this code.      % NOT?
 filterDim = params.patchWidth;
-poolDim = 5;
+poolDim = 5;                                                                    % this should really be with its brethren in params
 numFilters = params.numFeatures;
 trainImages=reshape(trainData, imgSize, imgSize, size(trainData, 2));
 testImages=reshape(testData, imgSize, imgSize, size(testData, 2));
+
 %  Compute convolutional responses
 %  Completed feedfowardRICA.m.
+tic;
 trainAct = feedfowardRICA(filterDim, poolDim, numFilters, trainImages, W);
 testAct = feedfowardRICA(filterDim, poolDim, numFilters, testImages, W);
+fprintf('RICA feature extraction (convolution) time (sec): %g\n', toc);
+
 %  reshape the responses into feature vectors
 featureSize = size(trainAct,1)*size(trainAct,2)*size(trainAct,3);
 trainFeatures = reshape(trainAct, featureSize, size(trainData, 2));
@@ -161,6 +167,9 @@ numClasses  = 5; % doing 5-class digit recognition
 % initialize softmax weights randomly
 randTheta2 = randn(numClasses, featureSize)*0.01;  % 1/sqrt(params.n);
 randTheta2 = randTheta2 ./ repmat(sqrt(sum(randTheta2.^2,2)), 1, size(randTheta2,2)); 
+    % need a bit of pre/post processing to handle softmax_regression_vec's 
+    % non-standard quirk of fixing theta = 0 for last class
+    randTheta2 = randTheta2(1:numClasses-1, :);
 randTheta2 = randTheta2';
 randTheta2 = randTheta2(:);
 
@@ -171,7 +180,16 @@ options.MaxFunEvals = Inf;
 options.MaxIter = 300;
 
 % optimize
-%%% MY CODE HERE %%%
+%%% MY CODE HERE %%% - MODIFIED from ex1c_softmax.m
+    tic;
+    opttheta2 = [ ...
+        reshape(...
+            minFunc(@softmax_regression_vec, randTheta2(:), options, trainFeatures, trainLabels), ...
+            featureSize, numClasses-1 ...
+        ), ...
+        zeros(featureSize, 1) ...
+    ];
+    fprintf('Softmax classifier training time (sec): %g\n', toc);
     
 
 
@@ -180,7 +198,11 @@ options.MaxIter = 300;
 %% STEP 5: Testing 
 % Compute Predictions on tran and test sets using softmaxPredict
 % and softmaxModel
-%%% YOUR CODE HERE %%%
+%%% MY CODE HERE %%%
+    % uh, no need to normalize, since exp(.) is monotonic
+    [unused_, train_pred] = max(opttheta2'*trainFeatures, [], 1);
+    [unused_, pred] = max(opttheta2'*testFeatures, [], 1);
+    
 % Classification Score
 fprintf('Train Accuracy: %f%%\n', 100*mean(train_pred(:) == trainLabels(:)));
 fprintf('Test Accuracy: %f%%\n', 100*mean(pred(:) == testLabels(:)));

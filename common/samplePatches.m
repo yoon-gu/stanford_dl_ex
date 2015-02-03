@@ -16,7 +16,7 @@ maxHeight = imHeight - patchSize + 1;
 if isOctave()
     randi = @(imax)  1 + round((imax-1) * rand());
 else
-    randi = @randi;
+    randi = @randi; % actually, this doesn't work either in MATLAB...
 end 
 
 % Sample!
