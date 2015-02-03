@@ -12,25 +12,33 @@
 clear all; 
 close all;
 
+
+
 %% ======================================================================
 %  STEP 0: Here we provide the relevant parameters values that will
 %  allow your RICA to get good filters; you do not need to 
 %  change the parameters below.
-addpath(genpath('..'))
-addpath ../common; % for isOctave()
+addpath(genpath('..')) % apparently this adds all subdirectories too (should've noticed from minFunc)
 imgSize = 28;
-numPatches = 200000;
+%numPatches = 200000;
 global params;
 params.patchWidth=9;           % width of a patch
 params.n=params.patchWidth^2;   % dimensionality of input to RICA
 params.lambda = 0.0005;   % sparsity cost
 params.numFeatures = 32; % number of filter banks to learn
 params.epsilon = 1e-2;   
+params.DEBUG = true;
 
-DEBUG = false;
+DEBUG = params.DEBUG;
 if DEBUG
     numPatches = 2000;
+    fractionUnlabeled = 0.99;
+else
+    numPatches = 200000;
+    fractionUnlabeled = 5/6;
 end
+
+
 
 %% ======================================================================
 %  STEP 1: Load data from the MNIST database
@@ -45,7 +53,7 @@ mnistLabels = loadMNISTLabels('../common/train-labels-idx1-ubyte');
 
 numExamples = size(mnistData, 2);
 % most of the data are pretended to be unlabelled
-numUnlabeled = round(numExamples*5/6);
+numUnlabeled = round(numExamples*fractionUnlabeled);
 unlabeledSet = 1:numUnlabeled; 
 unlabeledData = mnistData(:, unlabeledSet);
 
@@ -55,7 +63,7 @@ trainSet = (numUnlabeled + 1) : (numUnlabeled + round(numLabeled/2));
 testSet = (numUnlabeled + round(numLabeled/2) + 1) : (numExamples); 
 trainData   = mnistData(:, trainSet);
 trainLabels = mnistLabels(trainSet)' + 1; % Shift Labels to the Range 1-10
-% only keep digits 0-4, so that unlabelled dataset has different distribution
+% only keep digits 0-4, so that unlabelled dataset has different distribution       % self-taught, not semi-supervised
 % than the labelled one.
 removeSet = find(trainLabels > 5);
 trainData(:,removeSet)= [] ;
@@ -68,12 +76,13 @@ removeSet = find(testLabels > 5);
 testData(:,removeSet)= [] ;
 testLabels(removeSet) = [];
 
-
 % Output Some Statistics
 fprintf('# examples in unlabeled set: %d\n', size(unlabeledData, 2));
 fprintf('# examples in supervised training set: %d\n\n', size(trainData, 2));
 fprintf('# examples in supervised testing set: %d\n\n', size(testData, 2));
 if isOctave(); fflush(stdout); end
+
+
 
 %% ======================================================================
 %  STEP 2: Train the RICA
@@ -91,18 +100,32 @@ patches = samplePatches([unlabeledData,trainData],params.patchWidth,numPatches);
 options.Method = 'lbfgs';
 options.MaxFunEvals = Inf;
 options.MaxIter = 1000;
+if DEBUG; options.MaxIter = 10; end
 % You'll need to replace this line with RICA training code
-opttheta = randTheta;
+%opttheta = randTheta;
 
 %  Find opttheta by running the RICA on all the training patches.
 %  You will need to whitened the patches with the zca2 function 
 %  then call minFunc with the softICACost function as seen in the RICA exercise.
-%%% YOUR CODE HERE %%%
-V = zeros(params.n);
+    %%% MY CODE HERE %%% - copy/pasted from runSoftICA.m....(too short...)
+    % Apply ZCA
+    [patches, V] = zca2(patches); 
+    
+    % Normalize each patch
+    m = sqrt(sum(patches.^2) + (1e-8)); 
+    x = bsxfunwrap(@rdivide,patches,m);
+    
+    % optimize (train RICA)
+    tic;
+    opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
+    fprintf('RICA training time (sec): %g\n', toc);
+    if isOctave(); fflush(stdout); end
 
 % reshape visualize weights
 W = reshape(opttheta, params.numFeatures, params.n);
 display_network(W');
+
+
 
 %% ======================================================================
 %% STEP 3: Extract Features from the Supervised Dataset
@@ -114,14 +137,14 @@ W = W*V;
 W = reshape(W, params.numFeatures, params.patchWidth, params.patchWidth);
 W = permute(W, [2,3,1]);
 
-%  setting up convolutional feed-forward. You do need to modify this code.
+%  setting up convolutional feed-forward. You do need to modify this code.      % NOT?
 filterDim = params.patchWidth;
 poolDim = 5;
 numFilters = params.numFeatures;
 trainImages=reshape(trainData, imgSize, imgSize, size(trainData, 2));
 testImages=reshape(testData, imgSize, imgSize, size(testData, 2));
 %  Compute convolutional responses
-%  TODO: You will need to complete feedfowardRICA.m 
+%  Completed feedfowardRICA.m.
 trainAct = feedfowardRICA(filterDim, poolDim, numFilters, trainImages, W);
 testAct = feedfowardRICA(filterDim, poolDim, numFilters, testImages, W);
 %  reshape the responses into feature vectors
@@ -129,6 +152,8 @@ featureSize = size(trainAct,1)*size(trainAct,2)*size(trainAct,3);
 trainFeatures = reshape(trainAct, featureSize, size(trainData, 2));
 testFeatures = reshape(testAct, featureSize, size(testData, 2));
 
+
+    
 %% ======================================================================
 %% STEP 4: Train the softmax classifier
 
@@ -146,7 +171,9 @@ options.MaxFunEvals = Inf;
 options.MaxIter = 300;
 
 % optimize
-%%% YOUR CODE HERE %%%
+%%% MY CODE HERE %%%
+    
+
 
 
 %%======================================================================

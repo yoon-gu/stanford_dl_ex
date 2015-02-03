@@ -31,34 +31,48 @@ poolMat = ones(poolDim);
 %      2. Sum everything in each pooling region
 %      3. add params.epsilon to every element before taking element-wise square-root
 %      (Hint: use poolMat similarly as in cnnPool.m)
-
+    % uh, wouldn't it have been better to call cnnConvolve() instead?? sigh.
 
 
 for imageNum = 1:numImages
-  if mod(imageNum,500)==0
-    fprintf('forward-prop image %d\n', imageNum);
+  if mod(imageNum,500)==0 || params.DEBUG
+    fprintf('forward-prop image %d / %d\n', imageNum, numImages);
+    if isOctave(); fflush(stdout); end
   end
   for filterNum = 1:numFilters
 
-    filter = zeros(8,8); % You should replace this
+    %filt = zeros(8,8); % You should replace this                           % this was the wrong size?
     % Form W, obtain the feature (filterDim x filterDim) needed during the
     % convolution
-    %%% YOUR CODE HERE %%%
+    %%% MY CODE HERE %%% - copy/pasted from cnnConvolve.m....
+        convolvedImage = zeros(convDim, convDim); % useful for matrix size checking, I suppose
+        filt = W(:,:,filterNum);
+        assert(isequal(size(filt), [filterDim filterDim]));
 
     % Flip the feature matrix because of the definition of convolution, as explained later
-    filter = rot90(squeeze(filter),2);
+    filt = rot90(squeeze(filt),2);
       
     % Obtain the image
     im = squeeze(images(:, :, imageNum));
 
-    resp = zeros(convDim, convDim); % You should replace this
+    %resp = zeros(convDim, convDim); % You should replace this
     % Convolve "filter" with "im" to find "resp"
     % be sure to do a 'valid' convolution
-    %%% YOUR CODE HERE %%%
+    %%% MY CODE HERE %%% - copy/pasted from cnnConvolve.m....
+        convolvedImage = convolvedImage + conv2(im, filt, 'valid'); % 'no bias term' - as per spec above
+        resp = sigmoid(convolvedImage); % hmmm... i guess so...
+        assert(isequal(size(resp), [convDim convDim]))
+    
     % Then, apply square-square-root pooling on "resp" to get the hidden
     % activation "act"
-    act = zeros(convDim / poolDim, convDim / poolDim); % You should replace this
-    %%% YOUR CODE HERE %%%
+    %act = zeros(convDim / poolDim, convDim / poolDim); % You should replace this
+    %%% MY CODE HERE %%%
+        convolved = conv2(resp.^2, ones(poolDim, poolDim), 'valid');
+        subsampled = convolved(1:poolDim:convDim, 1:poolDim:convDim);
+        act = sqrt(subsampled + params.epsilon); % no need to divide by pooDim^2?
+        assert(isequal(size(act), [convDim / poolDim, convDim / poolDim]));
+        assert(mod(convDim, poolDim) == 0);
+    
     features(:, :, filterNum, imageNum) = act;
   end
 end
