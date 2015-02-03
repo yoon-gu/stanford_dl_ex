@@ -17,7 +17,7 @@ maxHeight = imHeight - patchSize + 1;
 for num = 1:numPatches
     x = call_randi(maxHeight);
     y = call_randi(maxWidth);
-    img = randi(numImages);
+    img = call_randi(numImages);
     p = rawImages(x:x+patchSize-1,y:y+patchSize-1, img);
     patches(:,num) = p(:);
 end
