@@ -8,11 +8,16 @@
 %  You will also need to have implemented sparseAutoencoderCost.m and 
 %  softmaxCost.m from previous exercises.
 %
+
+clear all; 
+close all;
+
 %% ======================================================================
 %  STEP 0: Here we provide the relevant parameters values that will
 %  allow your RICA to get good filters; you do not need to 
 %  change the parameters below.
 addpath(genpath('..'))
+addpath ../common; % for isOctave()
 imgSize = 28;
 global params;
 params.patchWidth=9;           % width of a patch
@@ -32,7 +37,7 @@ params.epsilon = 1e-2;
 mnistData   = loadMNISTImages('../common/train-images-idx3-ubyte');
 mnistLabels = loadMNISTLabels('../common/train-labels-idx1-ubyte');
 
-numExamples = size(mnistData, 2);
+numExamples = size(mnistData, 2)
 % 50000 of the data are pretended to be unlabelled
 unlabeledSet = 1:50000;
 unlabeledData = mnistData(:, unlabeledSet);
@@ -62,6 +67,7 @@ testLabels(removeSet) = [];
 fprintf('# examples in unlabeled set: %d\n', size(unlabeledData, 2));
 fprintf('# examples in supervised training set: %d\n\n', size(trainData, 2));
 fprintf('# examples in supervised testing set: %d\n\n', size(testData, 2));
+if isOctave(); fflush(stdout); end
 
 %% ======================================================================
 %  STEP 2: Train the RICA
@@ -92,7 +98,6 @@ W = reshape(opttheta, params.numFeatures, params.n);
 display_network(W');
 
 %% ======================================================================
-
 %% STEP 3: Extract Features from the Supervised Dataset
 % pre-multiply the weights with whitening matrix, equivalent to whitening
 % each image patch before applying convolution. V should be the same V
@@ -116,6 +121,7 @@ testAct = feedfowardRICA(filterDim, poolDim, numFilters, testImages, W);
 featureSize = size(trainAct,1)*size(trainAct,2)*size(trainAct,3);
 trainFeatures = reshape(trainAct, featureSize, size(trainData, 2));
 testFeatures = reshape(testAct, featureSize, size(testData, 2));
+
 %% ======================================================================
 %% STEP 4: Train the softmax classifier
 
