@@ -13,19 +13,24 @@ patches = zeros(patchSize*patchSize, numPatches);
 maxWidth = imWidth - patchSize + 1;
 maxHeight = imHeight - patchSize + 1;
 
-if isOctave()
-    randi = @(imax)  1 + round((imax-1) * rand());
-else
-    randi = @randi; % actually, this doesn't work either in MATLAB...
-end 
-
 % Sample!
 for num = 1:numPatches
-    x = randi(maxHeight);
-    y = randi(maxWidth);
+    x = call_randi(maxHeight);
+    y = call_randi(maxWidth);
     img = randi(numImages);
     p = rawImages(x:x+patchSize-1,y:y+patchSize-1, img);
     patches(:,num) = p(:);
 end
+
+end % function samplePatches
     
+    
+    
+function r = call_randi(n)
+    if isOctave()
+        r = 1 + round((n-1) * rand());
+    else
+        r = randi(n);
+    end
+end
 
