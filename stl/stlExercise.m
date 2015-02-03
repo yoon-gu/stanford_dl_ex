@@ -86,6 +86,7 @@ opttheta = randTheta;
 %  You will need to whitened the patches with the zca2 function 
 %  then call minFunc with the softICACost function as seen in the RICA exercise.
 %%% YOUR CODE HERE %%%
+V = zeros(params.n);
 
 % reshape visualize weights
 W = reshape(opttheta, params.numFeatures, params.n);
