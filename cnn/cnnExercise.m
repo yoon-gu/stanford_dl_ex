@@ -53,6 +53,8 @@ convolvedFeatures = cnnConvolve(filterDim, numFilters, convImages, W, b);
 
 if isOctave()
     randi = @(dims)  dims(1) + round((dims(2)-dims(1)) * rand());
+else
+    randi = @randi;
 end
 
 % For 1000 random points

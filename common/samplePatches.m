@@ -15,7 +15,9 @@ maxHeight = imHeight - patchSize + 1;
 
 if isOctave()
     randi = @(imax)  1 + round((imax-1) * rand());
-end
+else
+    randi = @randi;
+end 
 
 % Sample!
 for num = 1:numPatches
