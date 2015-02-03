@@ -1,4 +1,4 @@
-function [Z] = zca2(x)
+function [Z, V] = zca2(x)
 epsilon = 1e-4;
 % You should be able to use the code from your PCA/ZCA exercise
 % Retain all of the components from the ZCA transform (i.e. do not do
