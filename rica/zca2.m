@@ -1,5 +1,5 @@
-function [Z, V, U] = zca2(x, epsilon)
-    if nargin < 2
+function [Z, U, S, V] = zca2(x, epsilon)
+    if nargin < 2       % see also old tutorial's section "Data Preprocessing"
         epsilon = 1e-4; % ugh, ICA section p. 2 mentions this BRIEFLY. but only orthonormal ICA requires epsilon = 0, not RICA, right?
     end
 % You should be able to use the code from your PCA/ZCA exercise
