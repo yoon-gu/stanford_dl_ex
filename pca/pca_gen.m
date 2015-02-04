@@ -22,8 +22,9 @@ display_network(x(:,randsel));
 %% Step 0b: Zero-mean the data (by row)
 %  You can make use of the mean and repmat/bsxfun functions.
     avg = mean(x, 1); % as per tutorial: "Mean pixel intensity for each patch"
+    %x = x - repmat(avg, size(x, 1), 1); % their storage-hungry version
     x = bsxfun(@minus, x, avg);
-
+    
 
 %%================================================================
 %% Step 1a: Implement PCA to obtain xRot
@@ -49,7 +50,7 @@ display_network(x(:,randsel));
 
 % Visualise the covariance matrix. You should see a line across the
 % diagonal against a blue background.
-figure('name','Visualisation of covariance matrix');
+figure('name','Visualisation of covariance matrix (should see solid or no line)');
 imagesc(covar);
 
 
@@ -57,7 +58,7 @@ imagesc(covar);
 %% Step 2: Find k, the number of components to retain
 %  Write code to determine k, the number of components to retain in order
 %  to retain at least 99% of the variance.
-    k = min(find(cumsum(diag(S)) / sum(diag(S)) >= 0.75));
+    k = min(find(cumsum(diag(S)) / sum(diag(S)) >= 0.99));
     fprintf('k = %d (n = %d)\n', k, size(S, 1))
 
 
@@ -96,7 +97,9 @@ display_network(x(:,randsel));
 epsilon = 1e-1; 
     % note that you do this on the ENTIRE xRot matrix, NOT just the k-subspace.
     % hence the need for "regularisation"?
+    %xPCAWhite = diag(1./sqrt(diag(S) + epsilon)) * xRot; % oh, they GAVE code in the "PCA" section.
     xPCAWhite = bsxfun(@rdivide, xRot, sqrt(diag(S) + epsilon));
+    
 
 %% Step 4b: Check your implementation of PCA whitening 
 %  Check your implementation of PCA whitening with and without regularisation. 
@@ -117,7 +120,7 @@ epsilon = 1e-1;
 
 % Visualise the covariance matrix. You should see a red line across the
 % diagonal against a blue background.
-figure('name','Visualisation of covariance matrix');
+figure('name','Visualisation of covariance matrix (depends on epsilon in Step 4a)');
 imagesc(covar);
 
 %%================================================================
