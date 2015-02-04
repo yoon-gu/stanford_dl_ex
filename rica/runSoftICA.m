@@ -11,12 +11,12 @@ if DEBUG
     params.m = 100;
     params.patchWidth = 3;
 else
-    params.m=20000;%10000;% num patches
+    params.m=10000;% num patches
     params.patchWidth=9;% width of a patch
 end
 params.n=params.patchWidth^2; % dimensionality of input to RICA
 params.lambda = 0.0005; % sparsity cost
-params.numFeatures = 32;%50; % number of filter banks to learn
+params.numFeatures = 50; % number of filter banks to learn
 params.epsilon = 1e-2; % epsilon to use in square-sqrt nonlinearity
 
 % Load MNIST data set
@@ -41,7 +41,7 @@ x = bsxfunwrap(@rdivide,patches,m);
 %% Run the optimization
 options.Method = 'lbfgs';
 options.MaxFunEvals = Inf;
-options.MaxIter = 1000;%500;
+options.MaxIter = 500;
 %options.display = 'off';
 options.outputFcn = @showBases;
 
