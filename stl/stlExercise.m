@@ -127,14 +127,37 @@ options.outputFcn = @showBases;
 %  then call minFunc with the softICACost function as seen in the RICA exercise.
     %%% MY CODE HERE %%% - copy/pasted from runSoftICA.m....(too short...)
     % Apply ZCA. pca_gen.m: epsilon = 1e-1; zca2.m: epsilon = 1e-4...
-    [x, V, U] = zca2(patches, 1e-1); % orthonormal ICA requires epsilon = 0, but RICA doesn't??
+    [x, U, S, V] = zca2(patches, 0.05); % orthonormal ICA requires epsilon = 0, but RICA doesn't??
+    
+    
+    % I actually think the data look BLURRIER after ZCA(1e-4)
+
+    % sanity check: visualize patches before/after ZCA whitening
+        % yep, it's NOT my imagination. zca2(epsilon = 0.1) DOES seem to perform better!
+            % filtered vs raw patches don't look like blurred noise (like they do for 1e-4)
+            % "the long tail" (old tutorial "Data Preprocessing) starts around eigenvalues <= ~0.06
+    if isOctave() % 'learned filters' updates overwrite these in MATLAB
+        patchesToVisualize = 1:params.numFeatures;
+        figure('name', 'Raw patches');
+        display_network(patches(:, patchesToVisualize));
+    end
+    %assert(false, 'Learned filters overwrite patches...') % matlab only?
+
+    %assert(false, 'here to analyze S')
+    
     if ~isOctave(); clear patches; end
         % zca2(patches, 10) gave 98% test accuracy and 100% training accuracy... just a lucky fluctuation?
     
-    %% Normalize each patch - should i not do this?? still don't really understand RICA...
-    %m = sqrt(sum(x.^2) + (1e-8)); 
-    %x = bsxfunwrap(@rdivide,x,m);
+    % Normalize each patch - should i not do this?? still don't really understand RICA...
+    m = sqrt(sum(x.^2) + (1e-8)); 
+    x = bsxfunwrap(@rdivide,x,m);
 
+    if isOctave()
+        figure('name', 'ZCA-whitened patches');
+        display_network(x(:, patchesToVisualize));
+    end
+    figure('name', 'Learned filters');
+    
     % optimize (train RICA)
     tic;
     opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
@@ -145,6 +168,7 @@ options.outputFcn = @showBases;
 W = reshape(opttheta, params.numFeatures, params.n);
 display_network(W');
 
+    % TODO: mean-normalize supervised data with RICA mean?
 
 
 %% ======================================================================
