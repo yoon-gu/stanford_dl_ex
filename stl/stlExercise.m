@@ -32,10 +32,10 @@ if ~isOctave(); options.useMex = false; end % Octave and MATLAB mex files can't 
 
 DEBUG = params.DEBUG;
 if DEBUG
-    numPatches = 50000; % 2000 to debug RICA syntax, 50000 to debug correctness (~10 sec! cache thrashing?)...
+    numPatches = 200000;
     fractionUnlabeled = 0.99; % blow through supervised stage to test syntax
 else
-    numPatches = 200000;
+    numPatches = 200000; % 200000 for production; 20000 can run in ~2.5 min
     fractionUnlabeled = 5/6;
 end
 
@@ -109,8 +109,8 @@ if DEBUG; options.MaxIter = 10; end
 %  You will need to whitened the patches with the zca2 function 
 %  then call minFunc with the softICACost function as seen in the RICA exercise.
     %%% MY CODE HERE %%% - copy/pasted from runSoftICA.m....(too short...)
-    % Apply ZCA
-    [patches, V] = zca2(patches); 
+    % Apply ZCA. pca_gen.m: epsilon = 1e-1; zca2.m: epsilon = 1e-4...
+    [patches, V] = zca2(patches);%, 1e-1); % orthonormal ICA requires epsilon = 0, but RICA doesn't??
     
     % Normalize each patch - should i not do this?? still don't really understand RICA...
     m = sqrt(sum(patches.^2) + (1e-8)); 

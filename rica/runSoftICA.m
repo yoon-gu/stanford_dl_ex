@@ -32,8 +32,8 @@ data = loadMNISTImages('../common/train-images-idx3-ubyte');
 patches = samplePatches(data,params.patchWidth,params.m);
 % Step 2) Apply ZCA
 patches = zca2(patches);
-% Step 3) Normalize each patch. Each patch should be normalized as     % PCA Whitening: not needed for NATURAL images
-% x / ||x||_2 where x is the vector representation of the patch        % - but we are working with digits, which are NOT natural.
+% Step 3) Normalize each patch. Each patch should be normalized as     % PCA section: variance normalization is NOT needed??
+% x / ||x||_2 where x is the vector representation of the patch 
 m = sqrt(sum(patches.^2) + (1e-8));
 x = bsxfunwrap(@rdivide,patches,m);
 
