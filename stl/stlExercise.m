@@ -9,9 +9,12 @@
 %  softmaxCost.m from previous exercises.
 %
 
+    % is it just me, or do the minor hacks that let this run on 32-bit MATLAB make it a LOT faster??
+    % like, the ENTIRE script runs in ~2 min, instead of 20+?
+
 clear all; 
 close all;
-
+tstart = tic;
 
 
 %% ======================================================================
@@ -26,14 +29,18 @@ params.n=params.patchWidth^2;   % dimensionality of input to RICA
 params.lambda = 0.0005;   % sparsity cost
 params.numFeatures = 32; % number of filter banks to learn
 params.epsilon = 1e-2;   
-params.DEBUG = true;
+params.DEBUG = false;
 
 if ~isOctave(); options.useMex = false; end % Octave and MATLAB mex files can't commingle...can they?
 
 DEBUG = params.DEBUG;
 if DEBUG
-    numPatches = 200000;
-    fractionUnlabeled = 0.99; % blow through supervised stage to test syntax
+    numPatches = 2000;
+    if isOctave()
+        fractionUnlabeled = 0.99; % blow through supervised stage to test syntax
+    else
+        fractionUnlabeled = 5/6; % 32-bit MATLAB has trouble storing 99% of the training data (10000-image test set is ok)
+    end
 else
     numPatches = 200000; % 200000 for production; 20000 can run in ~2.5 min
     fractionUnlabeled = 5/6;
@@ -49,20 +56,21 @@ end
 %  change it.
 
 % Load MNIST database files
-mnistData   = loadMNISTImages('../common/train-images-idx3-ubyte');
+mnistData   = sparse(loadMNISTImages('../common/train-images-idx3-ubyte'));         % JUST enough to get 32-bit MATLAB to run
 mnistLabels = loadMNISTLabels('../common/train-labels-idx1-ubyte');
 
 numExamples = size(mnistData, 2);
 % most of the data are pretended to be unlabelled
 numUnlabeled = round(numExamples*fractionUnlabeled);
 unlabeledSet = 1:numUnlabeled; 
-unlabeledData = mnistData(:, unlabeledSet);
+unlabeledData = full(mnistData(:, unlabeledSet));
+
 
 % the rest are equally splitted into labelled train and test data
 numLabeled = numExamples - numUnlabeled;
 trainSet = (numUnlabeled + 1) : (numUnlabeled + round(numLabeled/2)); 
 testSet = (numUnlabeled + round(numLabeled/2) + 1) : (numExamples); 
-trainData   = mnistData(:, trainSet);
+trainData   = full(mnistData(:, trainSet));
 trainLabels = mnistLabels(trainSet)' + 1; % Shift Labels to the Range 1-10
 % only keep digits 0-4, so that unlabelled dataset has different distribution       % self-taught, not semi-supervised
 % than the labelled one.
@@ -70,15 +78,18 @@ removeSet = find(trainLabels > 5);
 trainData(:,removeSet)= [] ;
 trainLabels(removeSet) = [];
 
-testData   = mnistData(:, testSet);
+testData   = full(mnistData(:, testSet));
 testLabels = mnistLabels(testSet)' + 1;   % Shift Labels to the Range 1-10
 % only keep digits 0-4
 removeSet = find(testLabels > 5);
 testData(:,removeSet)= [] ;
 testLabels(removeSet) = [];
 
+if ~isOctave(); clear mnistData; end % every little bit helps?
+
+
 % Output Some Statistics
-fprintf('# examples in unlabeled set: %d\n', size(unlabeledData, 2));
+fprintf('# examples in unlabeled training set: %d\n', size(unlabeledData, 2));
 fprintf('# examples in supervised training set: %d\n', size(trainData, 2));
 fprintf('# examples in supervised testing set: %d\n\n', size(testData, 2));
 if isOctave(); fflush(stdout); end
@@ -95,27 +106,35 @@ randTheta = randTheta ./ repmat(sqrt(sum(randTheta.^2,2)), 1, size(randTheta,2))
 randTheta = randTheta(:);
 
 % subsample random patches from the unlabelled+training data
-patches = samplePatches([unlabeledData,trainData],params.patchWidth,numPatches);
+if isOctave()
+    patches = samplePatches([unlabeledData,trainData],params.patchWidth,numPatches);
+else
+    patches = samplePatches(unlabeledData, params.patchWidth, numPatches); % horzcat JUST too big for 32-bit MATLAB
+end
 
 %configure minFunc
 options.Method = 'lbfgs';
 options.MaxFunEvals = Inf;
 options.MaxIter = 1000;
 if DEBUG; options.MaxIter = 10; end
+options.outputFcn = @showBases;
 % You'll need to replace this line with RICA training code
 %opttheta = randTheta;
+%V = eye(params.n);
 
 %  Find opttheta by running the RICA on all the training patches.
 %  You will need to whitened the patches with the zca2 function 
 %  then call minFunc with the softICACost function as seen in the RICA exercise.
     %%% MY CODE HERE %%% - copy/pasted from runSoftICA.m....(too short...)
     % Apply ZCA. pca_gen.m: epsilon = 1e-1; zca2.m: epsilon = 1e-4...
-    [patches, V] = zca2(patches);%, 1e-1); % orthonormal ICA requires epsilon = 0, but RICA doesn't??
+    [x, V, U] = zca2(patches, 1e-1); % orthonormal ICA requires epsilon = 0, but RICA doesn't??
+    if ~isOctave(); clear patches; end
+        % zca2(patches, 10) gave 98% test accuracy and 100% training accuracy... just a lucky fluctuation?
     
-    % Normalize each patch - should i not do this?? still don't really understand RICA...
-    m = sqrt(sum(patches.^2) + (1e-8)); 
-    x = bsxfunwrap(@rdivide,patches,m);
-    
+    %% Normalize each patch - should i not do this?? still don't really understand RICA...
+    %m = sqrt(sum(x.^2) + (1e-8)); 
+    %x = bsxfunwrap(@rdivide,x,m);
+
     % optimize (train RICA)
     tic;
     opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
@@ -130,7 +149,7 @@ display_network(W');
 
 %% ======================================================================
 %% STEP 3: Extract Features from the Supervised Dataset
-% pre-multiply the weights with whitening matrix, equivalent to whitening
+% pre-multiply the weights with whitening matrix, equivalent to whitening       % POST-multiply the weights?
 % each image patch before applying convolution. V should be the same V
 % returned by the zca2 when you whiten the patches.
 W = W*V;
@@ -138,7 +157,7 @@ W = W*V;
 W = reshape(W, params.numFeatures, params.patchWidth, params.patchWidth);
 W = permute(W, [2,3,1]);
 
-%  setting up convolutional feed-forward. You do need to modify this code.      % NOT?
+%  setting up convolutional feed-forward. You do need to modify this code.      % do NOT need to modify?
 filterDim = params.patchWidth;
 poolDim = 5;                                                                    % this should really be with its brethren in params
 numFilters = params.numFeatures;
@@ -177,6 +196,7 @@ randTheta2 = randTheta2(:);
 options.Method = 'lbfgs';
 options.MaxFunEvals = Inf;
 options.MaxIter = 300;
+if isfield(options, 'outputFcn'); options = rmfield(options, 'outputFcn'); end
 
 % optimize
 %%% MY CODE HERE %%% - MODIFIED from ex1c_softmax.m
@@ -208,4 +228,6 @@ fprintf('Test Accuracy: %f%%\n', 100*mean(pred(:) == testLabels(:)));
 % You should get 100% train accuracy and ~99% test accuracy. With random
 % convolutional weights we get 97.5% test accuracy. Actual results may
 % vary as a result of random initializations
+
+fprintf('Total runtime (sec): %g\n', toc(tstart));
 

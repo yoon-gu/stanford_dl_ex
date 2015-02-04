@@ -1,4 +1,4 @@
-function [Z, V] = zca2(x, epsilon)
+function [Z, V, U] = zca2(x, epsilon)
     if nargin < 2
         epsilon = 1e-4; % ugh, ICA section p. 2 mentions this BRIEFLY. but only orthonormal ICA requires epsilon = 0, not RICA, right?
     end
@@ -9,12 +9,16 @@ function [Z, V] = zca2(x, epsilon)
 % x is the input patch data of size
 % z is the ZCA transformed data. The dimenison of z = x.
 
+    if ~isOctave()      % Octave: single() results in illegal step direction later!?!?
+        x = single(x); % 32-bit MATLAB: otherwise run out of memory... FAST!? (~90 sec for RICA training??)
+    end
+
     % following pca_gen.m
     avg = mean(x, 1); % can't ignore for unnatural images like digits?
-    %avg = mean(x, 2); % both removeDC.m and ICAExercise.m have this, but I think it's wrong. at least, it doesn't match 4b.pdf or 4c.pdf
+    %avg = mean(x, 2); % both removeDC.m and ICAExercise.m have this, but I think it's wrong. at least, it doesn't match tutorial's PCA section...
     
-    x = x - repmat(avg, size(x, 1), 1); % their storage-hungry version
-    %x = bsxfun(@minus, x, avg);
+    %x = x - repmat(avg, size(x, 1), 1); % their storage-hungry version
+    x = bsxfun(@minus, x, avg);
     
     Sigma = x * x' / size(x, 2);
     [U, S, V] = svd(Sigma);
@@ -23,5 +27,5 @@ function [Z, V] = zca2(x, epsilon)
     %xPCAWhite = bsxfun(@rdivide, xRot, sqrt(diag(S) + epsilon));
     %Z = U * xPCAWhite; % xZCAWhite
     
-    Z = U * diag(1./sqrt(diag(S) + epsilon)) * U' * x;
+    Z = U * diag(1./sqrt(diag(S) + epsilon)) * U' * x; % ironically, this seems more memory-frugal
     %Z = U * bsxfun(@rdivide, U' * x, sqrt(diag(S) + epsilon))
