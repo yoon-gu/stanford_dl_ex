@@ -14,7 +14,8 @@
 
 clear all; 
 close all;
-tstart = tic;
+%tstart = tic;
+tElapsed = 0;
 
 
 %% ======================================================================
@@ -31,6 +32,7 @@ params.numFeatures = 32; % number of filter banks to learn
 params.epsilon = 1e-2;   
 params.DEBUG = false;
 
+
 if ~isOctave(); options.useMex = false; end % Octave and MATLAB mex files can't commingle...can they?
 
 DEBUG = params.DEBUG;
@@ -45,6 +47,7 @@ else
     numPatches = 200000; % 200000 for production; 20000 can run in ~2.5 min
     fractionUnlabeled = 5/6;
 end
+zcaEpsilon = 0.1; % 1e-4 is almost CERTAINLY wrong
 
 
 
@@ -127,7 +130,7 @@ options.outputFcn = @showBases;
 %  then call minFunc with the softICACost function as seen in the RICA exercise.
     %%% MY CODE HERE %%% - copy/pasted from runSoftICA.m....(too short...)
     % Apply ZCA. pca_gen.m: epsilon = 1e-1; zca2.m: epsilon = 1e-4...
-    [x, U, S, V] = zca2(patches, 0.05); % orthonormal ICA requires epsilon = 0, but RICA doesn't??
+    [x, U, S, V] = zca2(patches, zcaEpsilon); % orthonormal ICA requires epsilon = 0, but RICA doesn't??
     
     
     % I actually think the data look BLURRIER after ZCA(1e-4)
@@ -162,6 +165,7 @@ options.outputFcn = @showBases;
     tic;
     opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
     fprintf('RICA unsupervised training time (sec): %g\n', toc);
+    tElapsed = tElapsed + toc;
     if isOctave(); fflush(stdout); end
 
 % reshape visualize weights
@@ -194,6 +198,7 @@ tic;
 trainAct = feedfowardRICA(filterDim, poolDim, numFilters, trainImages, W);
 testAct = feedfowardRICA(filterDim, poolDim, numFilters, testImages, W);
 fprintf('RICA feature extraction (convolution) time (sec): %g\n', toc);
+tElapsed = tElapsed + toc;
 
 %  reshape the responses into feature vectors
 featureSize = size(trainAct,1)*size(trainAct,2)*size(trainAct,3);
@@ -233,6 +238,7 @@ if isfield(options, 'outputFcn'); options = rmfield(options, 'outputFcn'); end
         zeros(featureSize, 1) ...
     ];
     fprintf('Softmax classifier training time (sec): %g\n', toc);
+    tElapsed = tElapsed + toc;
     
 
 
@@ -253,5 +259,5 @@ fprintf('Test Accuracy: %f%%\n', 100*mean(pred(:) == testLabels(:)));
 % convolutional weights we get 97.5% test accuracy. Actual results may
 % vary as a result of random initializations
 
-fprintf('Total runtime (sec): %g\n', toc(tstart));
+fprintf('Total training time (min): %g\n', tElapsed/60);
 
