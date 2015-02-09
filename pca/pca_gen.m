@@ -8,15 +8,33 @@
 close all;
 clear all;
 addpath(genpath('../common'))
-x = loadMNISTImages('../common/train-images-idx3-ubyte');
+x = sparse(loadMNISTImages('../common/train-images-idx3-ubyte'));
 figure('name','Raw images');
 if isOctave(); 
     call_randi = @(imax, sz1, sz2) 1 + round((imax-1)*rand(sz1, sz2)); 
 else
+    rng('default'); % get numbers to match (most) of the figures
     call_randi = @randi; % otherwise it becomes undefined...stupid MATLAB...
 end
 randsel = call_randi(size(x,2),200,1); % A random selection of samples for visualization
+
+% memory issues on 32-bit MATLAB
+if ~isOctave(); 
+    % trade time for storage...
+    stride = 392; % hey, this works
+    assert(mod(size(x, 1), stride) == 0)
+    for i=1:stride:size(x, 1)
+        block = i : i+stride-1;
+        xSingle(block, :) = single(full(x(block, :)));
+    end
+    x = xSingle;
+    clear xSingle;
+end 
+
 display_network(x(:,randsel));
+
+
+
 
 %%================================================================
 %% Step 0b: Zero-mean the data (by row)
@@ -54,6 +72,7 @@ figure('name','Visualisation of covariance matrix (should see solid or no line)'
 imagesc(covar);
 
 
+
 %%================================================================
 %% Step 2: Find k, the number of components to retain
 %  Write code to determine k, the number of components to retain in order
@@ -75,8 +94,10 @@ imagesc(covar);
 %  Visualise the data and compare it to the raw data. You will observe that
 %  there is little loss due to throwing away the principal components that
 %  correspond to dimensions with low variation.
-    Upca = U(:,1:k);
-    xHat = Upca * Upca' * x;
+%     Upca = U(:,1:k);
+%     xHat = Upca * (Upca' * x);
+    clear xRot;
+    xHat = U(:,1:k) * (U(:,1:k)' * x);
 
 
 % Visualise the data, and compare it to the raw data
@@ -88,6 +109,7 @@ figure('name',['PCA processed images ',sprintf('(%d / %d dimensions)', k, size(x
 display_network(xHat(:,randsel));
 figure('name','Raw images');
 display_network(x(:,randsel));
+if ~isOctave(); clear xHat; end % 32-bit MATLAB issues
 
 %%================================================================
 %% Step 4a: Implement PCA with whitening and regularisation
@@ -97,8 +119,8 @@ display_network(x(:,randsel));
 epsilon = 1e-1; 
     % note that you do this on the ENTIRE xRot matrix, NOT just the k-subspace.
     % hence the need for "regularisation"?
-    %xPCAWhite = diag(1./sqrt(diag(S) + epsilon)) * xRot; % oh, they GAVE code in the "PCA" section.
-    xPCAWhite = bsxfun(@rdivide, xRot, sqrt(diag(S) + epsilon));
+    %xPCAWhite = diag(1./sqrt(diag(S) + epsilon)) * U'*x; % oh, they GAVE code in the "PCA" section.
+    xPCAWhite = bsxfun(@rdivide, U'*x, sqrt(diag(S) + epsilon));
     
 
 %% Step 4b: Check your implementation of PCA whitening 
@@ -122,6 +144,7 @@ epsilon = 1e-1;
 % diagonal against a blue background.
 figure('name','Visualisation of covariance matrix (depends on epsilon in Step 4a)');
 imagesc(covar);
+if ~isOctave(); clear x; end % 32-bit MATLAB issues
 
 %%================================================================
 %% Step 5: Implement ZCA whitening
@@ -135,5 +158,5 @@ imagesc(covar);
 % You should observe that the whitened images have enhanced edges.
 figure('name','ZCA whitened images');
 display_network(xZCAWhite(:,randsel));
-figure('name','Raw images');
-display_network(x(:,randsel));
+% figure('name','Raw images'); % meh, see earlier figure.
+% display_network(x(:,randsel)); % saves memory for MATLAB
