@@ -9,6 +9,7 @@ close all;
 clear all;
 addpath(genpath('../common'))
 x = sparse(loadMNISTImages('../common/train-images-idx3-ubyte'));
+[n m] = size(x);
 figure('name','Raw images');
 if isOctave(); 
     call_randi = @(imax, sz1, sz2) 1 + round((imax-1)*rand(sz1, sz2)); 
@@ -51,6 +52,7 @@ display_network(x(:,randsel));
     Sigma = x * x' / size(x, 2);
     [U, S, V] = svd(Sigma); % uh, just copying tutorial now...
     xRot = U' * x; % "rotated version of the data
+    %if ~isOctave(); clear x; end
 
 
 %%================================================================
@@ -62,6 +64,7 @@ display_network(x(:,randsel));
 %  When visualised as an image, you should see a straight line across the
 %  diagonal (non-zero entries) against a blue background (zero entries).
     covar = xRot * xRot' / size(xRot, 2);
+    if ~isOctave(); clear xRot; end
     
     fprintf('Norm of off-diagonal covariance matrix elements = %g (should be tiny)\n',...
         norm(covar - covar.*eye(size(covar))))
@@ -96,7 +99,7 @@ imagesc(covar);
 %  correspond to dimensions with low variation.
 %     Upca = U(:,1:k);
 %     xHat = Upca * (Upca' * x);
-    clear xRot;
+%     xHat = U(:,1:k) * xRot(1:k, :); % too opaque
     xHat = U(:,1:k) * (U(:,1:k)' * x);
 
 
@@ -105,10 +108,10 @@ imagesc(covar);
 % For comparison, you may wish to generate a PCA reduced image which
 % retains only 90% of the variance.
 
-figure('name',['PCA processed images ',sprintf('(%d / %d dimensions)', k, size(x, 1)),'']);
+figure('name',['PCA processed images ',sprintf('(%d / %d dimensions)', k, n),'']);
 display_network(xHat(:,randsel));
-figure('name','Raw images');
-display_network(x(:,randsel));
+% figure('name','Raw images'); % meh, view earlier figure
+% display_network(x(:,randsel));
 if ~isOctave(); clear xHat; end % 32-bit MATLAB issues
 
 %%================================================================
@@ -119,9 +122,9 @@ if ~isOctave(); clear xHat; end % 32-bit MATLAB issues
 epsilon = 1e-1; 
     % note that you do this on the ENTIRE xRot matrix, NOT just the k-subspace.
     % hence the need for "regularisation"?
-    %xPCAWhite = diag(1./sqrt(diag(S) + epsilon)) * U'*x; % oh, they GAVE code in the "PCA" section.
+    %xPCAWhite = diag(1./sqrt(diag(S) + epsilon)) * U'*x;%xRot; % oh, they GAVE code in the "PCA" section.
     xPCAWhite = bsxfun(@rdivide, U'*x, sqrt(diag(S) + epsilon));
-    
+    if ~isOctave(); clear x; end % 32-bit MATLAB issues
 
 %% Step 4b: Check your implementation of PCA whitening 
 %  Check your implementation of PCA whitening with and without regularisation. 
@@ -137,14 +140,14 @@ epsilon = 1e-1;
 %  With regularisation, you should see a red line that slowly turns
 %  blue across the diagonal, corresponding to the one entries slowly
 %  becoming smaller.
-    covar = xPCAWhite * xPCAWhite' / size(xPCAWhite, 2);
+    covarPCA = xPCAWhite * xPCAWhite' / size(xPCAWhite, 2);
 
 
 % Visualise the covariance matrix. You should see a red line across the
 % diagonal against a blue background.
 figure('name','Visualisation of covariance matrix (depends on epsilon in Step 4a)');
-imagesc(covar);
-if ~isOctave(); clear x; end % 32-bit MATLAB issues
+imagesc(covarPCA);
+
 
 %%================================================================
 %% Step 5: Implement ZCA whitening
