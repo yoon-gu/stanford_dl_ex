@@ -11,11 +11,11 @@ addpath(genpath('../common'))
 x = loadMNISTImages('../common/train-images-idx3-ubyte');
 figure('name','Raw images');
 if isOctave(); 
-    randi = @(imax, sz1, sz2) 1 + round((imax-1)*rand(sz1, sz2)); 
+    call_randi = @(imax, sz1, sz2) 1 + round((imax-1)*rand(sz1, sz2)); 
 else
-    randi = @randi; % otherwise it becomes undefined...stupid MATLAB...
+    call_randi = @randi; % otherwise it becomes undefined...stupid MATLAB...
 end
-randsel = randi(size(x,2),200,1); % A random selection of samples for visualization
+randsel = call_randi(size(x,2),200,1); % A random selection of samples for visualization
 display_network(x(:,randsel));
 
 %%================================================================
