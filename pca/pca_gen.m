@@ -32,6 +32,12 @@ if ~isOctave();
     clear xSingle;
 end 
 
+% raw data statistics
+fprintf('max(x) = %g\n', max(max(x)))
+fprintf('min(x) = %g\n', min(min(x)))
+fprintf('mean(x) = %g\n', mean(mean(x)))
+if isOctave(); fprintf('std(x) = %g\n', mean(std(x))); end
+
 display_network(x(:,randsel));
 
 
