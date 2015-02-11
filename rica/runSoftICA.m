@@ -6,7 +6,7 @@ addpath(genpath('../common/')) % path to minfunc
 %% These parameters should give you sane results. We recommend experimenting
 % with these values after you have a working solution.
 global params;
-DEBUG = true;
+DEBUG = false;
 TEST_STL = false;
 if DEBUG
     params.m = 100;
@@ -103,9 +103,10 @@ if DEBUG
     disp(diff); 
     assert(diff < 1e-6,...
         'Difference too large. Check your gradient computation again');    
+    disp 'Derivatives checked!'
+    return
 end
-fprintf('derivatives checked!\n')
-return;
+
 
 % optimize
 tic;
