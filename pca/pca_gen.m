@@ -128,8 +128,8 @@ if ~isOctave(); clear xHat; end % 32-bit MATLAB issues
 epsilon = 1e-1; 
     % note that you do this on the ENTIRE xRot matrix, NOT just the k-subspace.
     % hence the need for "regularisation"?
-    %xPCAWhite = diag(1./sqrt(diag(S) + epsilon)) * U'*x;%xRot; % oh, they GAVE code in the "PCA" section.
-    xPCAWhite = bsxfun(@rdivide, U'*x, sqrt(diag(S) + epsilon));
+    xPCAWhite = diag(1./sqrt(diag(S) + epsilon)) * U'*x;%xRot; % oh, they GAVE code in the "PCA" section.
+    %xPCAWhite = bsxfun(@rdivide, U'*x, sqrt(diag(S) + epsilon));
     if ~isOctave(); clear x; end % 32-bit MATLAB issues
 
 %% Step 4b: Check your implementation of PCA whitening 
