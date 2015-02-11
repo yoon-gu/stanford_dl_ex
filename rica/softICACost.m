@@ -20,8 +20,15 @@ W = l2rowscaled(W, 1); % norm constraint? cf. lecture notes p. 17 - but isn't th
     % not dividing by # examples because tutorial doesn't do that
     cost = params.lambda*sum(sum(l1norms));%softPenalties);% + 0.5*sum(sum(reconstructionError.^2));  
     
+    for f=1:params.numFeatures
+        for d=1:params.n
+            Wgrad(f,d) += params.lambda * sum(z2(f,:) .* x(d,:) ./ l1norms(f,:));
+        end
+    end
+    
     %cost = params.lambda * sum(sum(sqrt(z2.^2 + params.epsilon)));
     costUnvectorized = 0;
+    WgradUnvectorized = zeros(size(W));
     for i=1:size(x,2)
         for f=1:params.numFeatures
         
@@ -35,11 +42,12 @@ W = l2rowscaled(W, 1); % norm constraint? cf. lecture notes p. 17 - but isn't th
             
             % need sqrt() denom
             for d=1:params.n
-                Wgrad(f,d) += params.lambda * Wx * x(d,i) / s;
+                WgradUnvectorized(f,d) += params.lambda * Wx * x(d,i) / s;
             end
         end
     end
     assert(abs(cost/costUnvectorized - 1) < 1e-3, 'cost vectorization')
+    assert(norm(abs(Wgrad - WgradUnvectorized)) < 1e-3, 'gradient vectorization')
     %size(W)
     %size(x)
     %
