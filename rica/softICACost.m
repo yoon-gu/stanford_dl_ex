@@ -30,14 +30,15 @@ W = l2rowscaled(W, 1); % norm constraint? cf. lecture notes p. 17 - but isn't th
                 % ||Wx(f,i)|| = sqrt((Wf*xi)^2 + eps)
                 Wx = 0;
                 for d=1:params.n
-                    Wx += W(f,d)*x(d,i);
+                    Wx = Wx + W(f,d)*x(d,i);
                 end
                 s = sqrt(Wx^2 + params.epsilon);
-                costUnvectorized += params.lambda * s; %sqrt(Wx^2 + params.epsilon);
+                costUnvectorized = costUnvectorized + params.lambda * s; 
                 
                 % need sqrt() denom
                 for d=1:params.n
-                    WgradUnvectorized(f,d) += params.lambda * Wx * x(d,i) / s;
+                    WgradUnvectorized(f,d) = WgradUnvectorized(f,d) + ...
+                        params.lambda * Wx * x(d,i) / s;
                 end
             end
         end
