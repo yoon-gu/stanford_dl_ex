@@ -7,35 +7,46 @@ addpath(genpath('../common/')) % path to minfunc
 % with these values after you have a working solution.
 global params;
 DEBUG = false;
-TEST_STL = false;
+SHOW_RAW = false;
+TEST_STL = false; % run in MATLAB for speed...
 if DEBUG
     params.m = 100;
     params.patchWidth = 3;
     params.numFeatures = 5;
 else    
-    params.m=10000;%200000;% num patches
+    params.m=20000;%10000;% num patches
     params.patchWidth=9;% width of a patch
-    params.numFeatures = 50; %50 % number of filter banks to learn
+    params.numFeatures = 32;%50 % number of filter banks to learn
 end
 params.n=params.patchWidth^2; % dimensionality of input to RICA
-params.lambda = 0.0005;%;%0.0005; % sparsity cost
-params.epsilon = 1e-2;% epsilon to use in square-sqrt nonlinearity
-zcaEpsilon = 1e-4; %%% originally 1e-4
+params.lambda = 0.005;%;%0.0005; % sparsity cost
+params.epsilon = 1e-2;% default 1e-2; epsilon to use in square-sqrt nonlinearity [for sparsity]
+params.normeps = 1e-5; % default 1e-5; for l2rowscaled...
+step3_eps = 1e-8; % default 1e-8; for post-ZCA normalization
+zcaEpsilon = 1e-4; % default 1e-4
 
 % Load MNIST data set
 data = loadMNISTImages('../common/train-images-idx3-ubyte');
 
 % emulate parameters for STL exercise
 if TEST_STL
-    params.m = 200000;
+    assert(~DEBUG);
+    if isOctave()
+        params.m = 100000;%200000; % but double precision, which seems to make a difference??
+    else
+        params.m = 200000;
+    end
     params.numFeatures = 32;
     data = sparse(data); % for 32-bit MATLAB - eat the overhead in Octave
-    data = data(:, 1:round(size(data, 2) * (5/6)));
+    if size(data, 2) > 10000 % using full, "non-fake" training data set
+        data = data(:, 1:round(size(data, 2) * (11/12)));%(5/6)));
+    end
     data = full(data);
 end
 
 % random selection of patches for visualization
-if isOctave(); 
+if isOctave()
+    rand('state', 0);
     call_randi = @(imax, sz1, sz2) 1 + round((imax-1)*rand(sz1, sz2)); 
 else
     rng('default'); % get numbers to match (most) of the figures
@@ -51,8 +62,14 @@ randsel = call_randi(params.m,200,1); % A random selection of samples for visual
 
 % Step 1) Sample patches
 patches = samplePatches(data,params.patchWidth,params.m);
-figure('name', 'Raw patches'); display_network(patches(:, randsel));
-if ~isOctave(); patches = single(patches); end
+if SHOW_RAW
+    figure('name', 'Raw patches'); 
+    display_network(patches(:, randsel));
+end
+if ~isOctave() 
+    clear data;
+%     patches = single(patches); 
+end
 
 % Step 2) Apply ZCA
 %for p=-6:3
@@ -65,13 +82,16 @@ if ~isOctave(); patches = single(patches); end
 %return
 
 patches = zca2(patches, zcaEpsilon);
-if ~DEBUG; figure('name', 'ZCA-whitened patches'); display_network(patches(:, randsel)); end
+if SHOW_RAW 
+    figure('name', 'ZCA-whitened patches'); 
+    display_network(patches(:, randsel)); 
+end
 
 % Step 3) Normalize each patch. Each patch should be normalized as     % PCA section: variance normalization is NOT needed??
 % x / ||x||_2 where x is the vector representation of the patch 
-% x = patches;
-m = sqrt(sum(patches.^2) + (1e-8));
-x = bsxfunwrap(@rdivide,patches,m);
+x = patches;
+% m = sqrt(sum(patches.^2) + (step3_eps));
+% x = bsxfunwrap(@rdivide,patches,m);
 
 
 
@@ -81,7 +101,8 @@ options.Method = 'lbfgs';
 options.MaxFunEvals = Inf;
 options.MaxIter = 500;
 %options.display = 'off';
-% options.outputFcn = @showBases;
+% if TEST_STL; options.MaxIter = 1000; end % unnecessary if just looking
+if ~SHOW_RAW; options.outputFcn = @showBases; end
 if ~isOctave; options.useMex = false; end
 
 
@@ -115,5 +136,5 @@ fprintf('Optimization time (sec): %g\n', toc);
 
 % display result
 W = reshape(opttheta, params.numFeatures, params.n);
-figure('name', 'Final filters')
+if SHOW_RAW; figure('name', 'Final filters'); end
 display_network(W');

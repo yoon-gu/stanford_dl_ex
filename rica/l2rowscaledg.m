@@ -1,6 +1,12 @@
 function [grad] = l2rowscaledg(x,y,outderv, alpha)
 
-normeps = 1e-5;
+global params;
+if isfield(params, 'normeps')
+    normeps = params.normeps;
+else
+    normeps = 1e-5;
+end
+
 if (~exist('outderv','var')||isempty(outderv))
     error('Requires outderv of previous layer to compute gradient!');
 end
