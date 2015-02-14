@@ -14,12 +14,12 @@ if DEBUG
     params.patchWidth = 3;
     params.numFeatures = 5;
 else    
-    params.m=20000;%10000;% num patches
+    params.m=10000;% num patches
     params.patchWidth=9;% width of a patch
-    params.numFeatures = 32;%50 % number of filter banks to learn
+    params.numFeatures = 50; % number of filter banks to learn
 end
 params.n=params.patchWidth^2; % dimensionality of input to RICA
-params.lambda = 0.005;%;%0.0005; % sparsity cost
+params.lambda = 0.005;%;%default 0.0005; % sparsity cost
 params.epsilon = 1e-2;% default 1e-2; epsilon to use in square-sqrt nonlinearity [for sparsity]
 params.normeps = 1e-5; % default 1e-5; for l2rowscaled...
 step3_eps = 1e-8; % default 1e-8; for post-ZCA normalization
@@ -90,8 +90,8 @@ end
 % Step 3) Normalize each patch. Each patch should be normalized as     % PCA section: variance normalization is NOT needed??
 % x / ||x||_2 where x is the vector representation of the patch 
 x = patches;
-% m = sqrt(sum(patches.^2) + (step3_eps));
-% x = bsxfunwrap(@rdivide,patches,m);
+%m = sqrt(sum(patches.^2) + (step3_eps));
+%x = bsxfunwrap(@rdivide,patches,m);
 
 
 

@@ -14,7 +14,7 @@
 
 clear all; 
 close all;
-%tstart = tic;
+tstart = tic;
 tElapsed = 0;
 
 
@@ -27,7 +27,7 @@ imgSize = 28;
 global params;
 params.patchWidth=9;           % width of a patch
 params.n=params.patchWidth^2;   % dimensionality of input to RICA
-params.lambda = 0.0005;   % sparsity cost
+params.lambda = 0.005;   % sparsity cost
 params.numFeatures = 32; % number of filter banks to learn
 params.epsilon = 1e-2;   
 params.DEBUG = false;
@@ -47,7 +47,7 @@ else
     numPatches = 200000; % 200000 for production; 20000 can run in ~2.5 min
     fractionUnlabeled = 5/6;
 end
-zcaEpsilon = 0.1; % 1e-4 is almost CERTAINLY wrong
+zcaEpsilon = 1e-4; % red herring! ZCA-whitened patches look FINE - and converged in small-eps direction
 
 
 
@@ -113,6 +113,7 @@ if isOctave()
     patches = samplePatches([unlabeledData,trainData],params.patchWidth,numPatches);
 else
     patches = samplePatches(unlabeledData, params.patchWidth, numPatches); % horzcat JUST too big for 32-bit MATLAB
+    clear mnistData; % enough to allow double precision globally?
 end
 
 %configure minFunc
@@ -129,10 +130,12 @@ options.outputFcn = @showBases;
 %  You will need to whitened the patches with the zca2 function 
 %  then call minFunc with the softICACost function as seen in the RICA exercise.
     %%% MY CODE HERE %%% - copy/pasted from runSoftICA.m....(too short...)
+    
+    % aha, should you zca-whiten the patches, or ALL IMAGES??
+        % i guess it's the patches, since W *= V dimensions wouldn't match otherwise...
+    
     % Apply ZCA. pca_gen.m: epsilon = 1e-1; zca2.m: epsilon = 1e-4...
     [x, U, S, V] = zca2(patches, zcaEpsilon); % orthonormal ICA requires epsilon = 0, but RICA doesn't??
-    
-    
     % I actually think the data look BLURRIER after ZCA(1e-4)
 
     % sanity check: visualize patches before/after ZCA whitening
@@ -144,16 +147,14 @@ options.outputFcn = @showBases;
         figure('name', 'Raw patches');
         display_network(patches(:, patchesToVisualize));
     end
-    %assert(false, 'Learned filters overwrite patches...') % matlab only?
-
-    %assert(false, 'here to analyze S')
     
-    if ~isOctave(); clear patches; end
-        % zca2(patches, 10) gave 98% test accuracy and 100% training accuracy... just a lucky fluctuation?
+    if ~isOctave(); 
+        clear patches; 
+    end
     
     % Normalize each patch - should i not do this?? still don't really understand RICA...
-    m = sqrt(sum(x.^2) + (1e-8)); 
-    x = bsxfunwrap(@rdivide,x,m);
+    %m = sqrt(sum(x.^2) + (1e-8)); 
+    %x = bsxfunwrap(@rdivide,x,m);
 
     if isOctave()
         figure('name', 'ZCA-whitened patches');
