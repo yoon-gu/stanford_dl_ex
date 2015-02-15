@@ -32,6 +32,9 @@ params.numFeatures = 32; % number of filter banks to learn
 params.epsilon = 1e-2;   
 params.DEBUG = false;
 
+RUN_RICA = true; % false to read weights from file
+SAVED_WEIGHTS_FILE = 'stlWeights.mat';
+
 
 if ~isOctave(); options.useMex = false; end % Octave and MATLAB mex files can't commingle...can they?
 
@@ -44,7 +47,12 @@ if DEBUG
         fractionUnlabeled = 5/6; % 32-bit MATLAB has trouble storing 99% of the training data (10000-image test set is ok)
     end
 else
-    numPatches = 200000; % 200000 for production; 20000 can run in ~2.5 min
+    if isOctave()
+        numPatches = 200000; % 200000 for production; 20000 can run in ~2.5 min
+    else
+        numPatches = 100000; % my 32-bit MATLAB setup can't handle 200k @ double-precision
+        assert(false, 'loading saved weights from Octave now')
+    end
     fractionUnlabeled = 5/6;
 end
 zcaEpsilon = 1e-4; % red herring! ZCA-whitened patches look FINE - and converged in small-eps direction
@@ -98,82 +106,93 @@ fprintf('# examples in supervised testing set: %d\n\n', size(testData, 2));
 if isOctave(); fflush(stdout); end
 
 
+if RUN_RICA
+    %% ======================================================================
+    %  STEP 2: Train the RICA
+    %  This trains the RICA on the unlabeled training images. 
 
-%% ======================================================================
-%  STEP 2: Train the RICA
-%  This trains the RICA on the unlabeled training images. 
+    %  Randomly initialize the parameters
+    randTheta = randn(params.numFeatures,params.n)*0.01;  % 1/sqrt(params.n);
+    randTheta = randTheta ./ repmat(sqrt(sum(randTheta.^2,2)), 1, size(randTheta,2)); 
+    randTheta = randTheta(:);
 
-%  Randomly initialize the parameters
-randTheta = randn(params.numFeatures,params.n)*0.01;  % 1/sqrt(params.n);
-randTheta = randTheta ./ repmat(sqrt(sum(randTheta.^2,2)), 1, size(randTheta,2)); 
-randTheta = randTheta(:);
-
-% subsample random patches from the unlabelled+training data
-if isOctave()
-    patches = samplePatches([unlabeledData,trainData],params.patchWidth,numPatches);
-else
-    patches = samplePatches(unlabeledData, params.patchWidth, numPatches); % horzcat JUST too big for 32-bit MATLAB
-    clear mnistData; % enough to allow double precision globally?
-end
-
-%configure minFunc
-options.Method = 'lbfgs';
-options.MaxFunEvals = Inf;
-options.MaxIter = 1000;
-if DEBUG; options.MaxIter = 10; end
-options.outputFcn = @showBases;
-% You'll need to replace this line with RICA training code
-%opttheta = randTheta;
-%V = eye(params.n);
-
-%  Find opttheta by running the RICA on all the training patches.
-%  You will need to whitened the patches with the zca2 function 
-%  then call minFunc with the softICACost function as seen in the RICA exercise.
-    %%% MY CODE HERE %%% - copy/pasted from runSoftICA.m....(too short...)
-    
-    % aha, should you zca-whiten the patches, or ALL IMAGES??
-        % i guess it's the patches, since W *= V dimensions wouldn't match otherwise...
-    
-    % Apply ZCA. pca_gen.m: epsilon = 1e-1; zca2.m: epsilon = 1e-4...
-    [x, U, S, V] = zca2(patches, zcaEpsilon); % orthonormal ICA requires epsilon = 0, but RICA doesn't??
-    % I actually think the data look BLURRIER after ZCA(1e-4)
-
-    % sanity check: visualize patches before/after ZCA whitening
-        % yep, it's NOT my imagination. zca2(epsilon = 0.1) DOES seem to perform better!
-            % filtered vs raw patches don't look like blurred noise (like they do for 1e-4)
-            % "the long tail" (old tutorial "Data Preprocessing) starts around eigenvalues <= ~0.06
-    if isOctave() % 'learned filters' updates overwrite these in MATLAB
-        patchesToVisualize = 1:params.numFeatures;
-        figure('name', 'Raw patches');
-        display_network(patches(:, patchesToVisualize));
-    end
-    
-    if ~isOctave(); 
-        clear patches; 
-    end
-    
-    % Normalize each patch - should i not do this?? still don't really understand RICA...
-    %m = sqrt(sum(x.^2) + (1e-8)); 
-    %x = bsxfunwrap(@rdivide,x,m);
-
+    % subsample random patches from the unlabelled+training data
     if isOctave()
-        figure('name', 'ZCA-whitened patches');
-        display_network(x(:, patchesToVisualize));
+        patches = samplePatches([unlabeledData,trainData],params.patchWidth,numPatches);
+    else
+        patches = samplePatches(unlabeledData, params.patchWidth, numPatches); % horzcat JUST too big for 32-bit MATLAB
+        clear mnistData; % enough to allow double precision globally?
     end
-    figure('name', 'Learned filters');
-    
-    % optimize (train RICA)
-    tic;
-    opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
-    fprintf('RICA unsupervised training time (sec): %g\n', toc);
-    tElapsed = tElapsed + toc;
-    if isOctave(); fflush(stdout); end
 
-% reshape visualize weights
-W = reshape(opttheta, params.numFeatures, params.n);
-display_network(W');
+    %configure minFunc
+    options.Method = 'lbfgs';
+    options.MaxFunEvals = Inf;
+    options.MaxIter = 1000;
+    if DEBUG; options.MaxIter = 10; end
+    options.outputFcn = @showBases;
+    % You'll need to replace this line with RICA training code
+    %opttheta = randTheta;
+    %V = eye(params.n);
 
-    % TODO: mean-normalize supervised data with RICA mean?
+    %  Find opttheta by running the RICA on all the training patches.
+    %  You will need to whitened the patches with the zca2 function 
+    %  then call minFunc with the softICACost function as seen in the RICA exercise.
+        %%% MY CODE HERE %%% - copy/pasted from runSoftICA.m....(too short...)
+        
+        % aha, should you zca-whiten the patches, or ALL IMAGES??
+            % i guess it's the patches, since W *= V dimensions wouldn't match otherwise...
+        
+        % Apply ZCA. pca_gen.m: epsilon = 1e-1; zca2.m: epsilon = 1e-4...
+        [x, U, S, V] = zca2(patches, zcaEpsilon); % orthonormal ICA requires epsilon = 0, but RICA doesn't??
+
+        % sanity check: visualize patches before/after ZCA whitening
+            % yep, it's NOT my imagination. zca2(epsilon = 0.1) DOES seem to perform better!
+                % filtered vs raw patches don't look like blurred noise (like they do for 1e-4)
+                % "the long tail" (old tutorial "Data Preprocessing) starts around eigenvalues <= ~0.06
+        if isOctave() % 'learned filters' updates overwrite these in MATLAB
+            patchesToVisualize = 1:params.numFeatures;
+            figure('name', 'Raw patches');
+            display_network(patches(:, patchesToVisualize));
+        end
+        
+        if ~isOctave(); 
+            clear patches; 
+        end
+        
+    %     % Normalize each patch - should i not do this?? still don't really understand RICA...
+    %     m = sqrt(sum(x.^2) + (1e-8)); 
+    %     x = bsxfunwrap(@rdivide,x,m);
+
+        if isOctave()
+            figure('name', 'ZCA-whitened patches');
+            display_network(x(:, patchesToVisualize));
+        end
+        figure('name', 'Learned filters');
+        
+        % optimize (train RICA)
+        tic;
+        opttheta = randTheta;
+        opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
+        t = toc() / 60;
+        fprintf('RICA unsupervised training time (min): %g\n', t);
+        tElapsed = tElapsed + t;
+        if isOctave(); fflush(stdout); end
+
+    % reshape visualize weights
+    W = reshape(opttheta, params.numFeatures, params.n);
+    display_network(W');
+
+        % TODO: mean-normalize supervised data with RICA mean?
+        
+        
+    % save RICA-trained weights to file
+    saveargs = {'-mat'; SAVED_WEIGHTS_FILE};
+    if isOctave(); order = [1 2]; else order = [2 1]; end
+    save(saveargs{order(1)}, saveargs{order(2)}, 'W', 'U', 'V');
+else
+    % load RICA-trained weights from file
+    load SAVED_WEIGHTS_FILE;
+end
 
 
 %% ======================================================================
@@ -198,8 +217,9 @@ testImages=reshape(testData, imgSize, imgSize, size(testData, 2));
 tic;
 trainAct = feedfowardRICA(filterDim, poolDim, numFilters, trainImages, W);
 testAct = feedfowardRICA(filterDim, poolDim, numFilters, testImages, W);
-fprintf('RICA feature extraction (convolution) time (sec): %g\n', toc);
-tElapsed = tElapsed + toc;
+t = toc() / 60;
+fprintf('RICA feature extraction (convolution) time (min): %g\n', t);
+tElapsed = tElapsed + t;
 
 %  reshape the responses into feature vectors
 featureSize = size(trainAct,1)*size(trainAct,2)*size(trainAct,3);
@@ -238,8 +258,9 @@ if isfield(options, 'outputFcn'); options = rmfield(options, 'outputFcn'); end
         ), ...
         zeros(featureSize, 1) ...
     ];
-    fprintf('Softmax classifier training time (sec): %g\n', toc);
-    tElapsed = tElapsed + toc;
+    t = toc() / 60;
+    fprintf('Softmax classifier training time (min): %g\n', t);
+    tElapsed = tElapsed + t;
     
 
 
@@ -260,5 +281,5 @@ fprintf('Test Accuracy: %f%%\n', 100*mean(pred(:) == testLabels(:)));
 % convolutional weights we get 97.5% test accuracy. Actual results may
 % vary as a result of random initializations
 
-fprintf('Total training time (min): %g\n', tElapsed/60);
+fprintf('Total training time (min): %g\n', tElapsed);
 
