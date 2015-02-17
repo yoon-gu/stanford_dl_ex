@@ -59,17 +59,19 @@ for imageNum = 1:numImages
     % Convolve "filter" with "im" to find "resp"
     % be sure to do a 'valid' convolution
     %%% MY CODE HERE %%% - copy/pasted from cnnConvolve.m....
-        convolvedImage = convolvedImage + conv2(im, filt, 'valid'); % 'no bias term' - as per spec above
-        resp = sigmoid(convolvedImage); % hmmm... i guess so...
+        convolvedImage = conv2(im, filt, 'valid');%convolvedImage + conv2(im, filt, 'valid'); % 'no bias term' - as per spec above
+        resp = convolvedImage;
+        resp = sigmoid(convolvedImage); % hmmm... i guess so...? otherwise, just a glorified linear system, and filters are irrelevant?
+%         resp(find(resp < 0)) = 0; % rectified linear??
         assert(isequal(size(resp), [convDim convDim]))
     
     % Then, apply square-square-root pooling on "resp" to get the hidden
     % activation "act"
     %act = zeros(convDim / poolDim, convDim / poolDim); % You should replace this
     %%% MY CODE HERE %%%
-        convolved = conv2(resp.^2, ones(poolDim, poolDim), 'valid');
+        convolved = conv2(resp.^2, poolMat, 'valid');%ones(poolDim, poolDim), 'valid'); % oh here's the hint
         subsampled = convolved(1:poolDim:convDim, 1:poolDim:convDim);
-        act = sqrt(subsampled + params.epsilon); % no need to divide by pooDim^2?
+        act = sqrt(subsampled + params.ffRicaEpsilon); % no need to divide by pooDim^2?
         assert(isequal(size(act), [convDim / poolDim, convDim / poolDim]));
         assert(mod(convDim, poolDim) == 0);
     
