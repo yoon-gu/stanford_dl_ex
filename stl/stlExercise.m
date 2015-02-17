@@ -27,16 +27,29 @@ imgSize = 28;
 global params;
 params.patchWidth=9;           % width of a patch
 params.n=params.patchWidth^2;   % dimensionality of input to RICA
-params.lambda = 0.005;   % sparsity cost
-params.numFeatures = 32; % number of filter banks to learn
-params.epsilon = 1e-2;   
+params.lambda = 0.0005;   % sparsity cost (default 0.0005)
+params.numFeatures = 32; % number of filter banks to learn (default 32)
+params.epsilon = 1e-2; % for RICA L1-norm (default 1e-2)
+params.ffRicaEpsilon = 1e-2;%params.epsilon; % for feedFowardRica() [sic] (default 1e-2)
 params.DEBUG = false;
 
-RUN_RICA = true; % false to read weights from file
-SAVED_WEIGHTS_FILE = 'stlWeights.mat';
+NORMALIZE_SUPERVISED_DATA = true;
+NORMALIZE_ZCA_RESULT = false; % RICA runs only: setting this to false was the change that made my filters look reasonable...
+RUN_RICA = isOctave(); % false to read weights from file
+RANDN_WIDTH_RICA = 0.01; % default 0.01
+RANDN_WIDTH_SOFTMAX = 0.01; % default 0.01
+USE_RANDOM_WEIGHTS = false;
+USE_WHITENING_V = true;
+
+SAVED_WEIGHTS_FILE = sprintf('savedWeights-lambda=%0.4f.mat', params.lambda);
 
 
 if ~isOctave(); options.useMex = false; end % Octave and MATLAB mex files can't commingle...can they?
+if isOctave()
+    rand('state', 0);
+else
+    rng('default'); % get numbers to match (most) of the figures
+end
 
 DEBUG = params.DEBUG;
 if DEBUG
@@ -47,11 +60,11 @@ if DEBUG
         fractionUnlabeled = 5/6; % 32-bit MATLAB has trouble storing 99% of the training data (10000-image test set is ok)
     end
 else
-    if isOctave()
+    if isOctave() || ~RUN_RICA
         numPatches = 200000; % 200000 for production; 20000 can run in ~2.5 min
     else
         numPatches = 100000; % my 32-bit MATLAB setup can't handle 200k @ double-precision
-        assert(false, 'loading saved weights from Octave now')
+        %assert(~RUN_RICA, 'loading saved weights from Octave now')
     end
     fractionUnlabeled = 5/6;
 end
@@ -106,16 +119,17 @@ fprintf('# examples in supervised testing set: %d\n\n', size(testData, 2));
 if isOctave(); fflush(stdout); end
 
 
+
+%% ======================================================================
+%  STEP 2: Train the RICA
+%  This trains the RICA on the unlabeled training images. 
+
+%  Randomly initialize the parameters
+randTheta = randn(params.numFeatures,params.n)*RANDN_WIDTH_RICA;  % 1/sqrt(params.n);
+randTheta = randTheta ./ repmat(sqrt(sum(randTheta.^2,2)), 1, size(randTheta,2)); 
+randTheta = randTheta(:);
+
 if RUN_RICA
-    %% ======================================================================
-    %  STEP 2: Train the RICA
-    %  This trains the RICA on the unlabeled training images. 
-
-    %  Randomly initialize the parameters
-    randTheta = randn(params.numFeatures,params.n)*0.01;  % 1/sqrt(params.n);
-    randTheta = randTheta ./ repmat(sqrt(sum(randTheta.^2,2)), 1, size(randTheta,2)); 
-    randTheta = randTheta(:);
-
     % subsample random patches from the unlabelled+training data
     if isOctave()
         patches = samplePatches([unlabeledData,trainData],params.patchWidth,numPatches);
@@ -159,9 +173,11 @@ if RUN_RICA
             clear patches; 
         end
         
-    %     % Normalize each patch - should i not do this?? still don't really understand RICA...
-    %     m = sqrt(sum(x.^2) + (1e-8)); 
-    %     x = bsxfunwrap(@rdivide,x,m);
+        % Normalize each patch - should i not do this?? still don't really understand RICA...
+        if NORMALIZE_ZCA_RESULT
+            m = sqrt(sum(x.^2) + (1e-8)); 
+            x = bsxfunwrap(@rdivide,x,m);
+        end
 
         if isOctave()
             figure('name', 'ZCA-whitened patches');
@@ -172,7 +188,7 @@ if RUN_RICA
         % optimize (train RICA)
         tic;
         opttheta = randTheta;
-        opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
+        %opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
         t = toc() / 60;
         fprintf('RICA unsupervised training time (min): %g\n', t);
         tElapsed = tElapsed + t;
@@ -180,19 +196,29 @@ if RUN_RICA
 
     % reshape visualize weights
     W = reshape(opttheta, params.numFeatures, params.n);
-    display_network(W');
-
-        % TODO: mean-normalize supervised data with RICA mean?
-        
+    %display_network(W');
         
     % save RICA-trained weights to file
     saveargs = {'-mat'; SAVED_WEIGHTS_FILE};
     if isOctave(); order = [1 2]; else order = [2 1]; end
-    save(saveargs{order(1)}, saveargs{order(2)}, 'W', 'U', 'V');
+    save(saveargs{order(1)}, saveargs{order(2)}, 'W', 'U', 'S', 'V');
 else
     % load RICA-trained weights from file
-    load SAVED_WEIGHTS_FILE;
+    load(SAVED_WEIGHTS_FILE);
 end
+
+%load(sprintf('saved-%0.4f.mat', params.lambda)); % get old W,U,V. 
+%save(saveargs{order(1)}, saveargs{order(2)}, 'W', 'U', 'S', 'V'); % add S. will redo whitening from scratch.
+%assert(false, 'tinkering with save data')
+
+if USE_RANDOM_WEIGHTS && ~RUN_RICA
+    disp 'Using random weights as a control experiment.'
+    W = reshape(randTheta, params.numFeatures, params.n);% random weights (testing)
+    
+    disp 'Also not using any whitening? (this is the empty-stub default)'
+    V = eye(size(V));
+end
+display_network(W');
 
 
 %% ======================================================================
@@ -201,9 +227,26 @@ end
 % each image patch before applying convolution. V should be the same V
 % returned by the zca2 when you whiten the patches.
 W = W*V;
+
+    if USE_WHITENING_V
+        % undo post-multiplication by V
+        W = W*V';
+        
+        % post-multiply weights by same whitening matrix as in zca2?
+        W = W * (U * diag(1./sqrt(diag(S) + zcaEpsilon)) * U');
+    end
+        
+
 %  reshape RICA weights to be convolutional weights.
 W = reshape(W, params.numFeatures, params.patchWidth, params.patchWidth);
 W = permute(W, [2,3,1]);
+
+    % mean-normalize supervised data too?? it's per-data-point, so should be ok
+    % wait, unsupervised mean-normalized was per PATCH, not per image...
+    if NORMALIZE_SUPERVISED_DATA
+        trainData = bsxfun(@minus, trainData, mean(trainData, 1));
+        testData = bsxfun(@minus, testData, mean(testData, 1));
+    end
 
 %  setting up convolutional feed-forward. You do need to modify this code.      % do NOT need to modify?
 filterDim = params.patchWidth;
@@ -217,9 +260,9 @@ testImages=reshape(testData, imgSize, imgSize, size(testData, 2));
 tic;
 trainAct = feedfowardRICA(filterDim, poolDim, numFilters, trainImages, W);
 testAct = feedfowardRICA(filterDim, poolDim, numFilters, testImages, W);
-t = toc() / 60;
-fprintf('RICA feature extraction (convolution) time (min): %g\n', t);
-tElapsed = tElapsed + t;
+t = toc();
+fprintf('RICA feature extraction (convolution) time (sec): %g\n', t);
+tElapsed = tElapsed + t/60;
 
 %  reshape the responses into feature vectors
 featureSize = size(trainAct,1)*size(trainAct,2)*size(trainAct,3);
@@ -233,11 +276,12 @@ testFeatures = reshape(testAct, featureSize, size(testData, 2));
 
 numClasses  = 5; % doing 5-class digit recognition
 % initialize softmax weights randomly
-randTheta2 = randn(numClasses, featureSize)*0.01;  % 1/sqrt(params.n);
-randTheta2 = randTheta2 ./ repmat(sqrt(sum(randTheta2.^2,2)), 1, size(randTheta2,2)); 
+randTheta2 = randn(numClasses, featureSize)*RANDN_WIDTH_SOFTMAX;%0.01;  % 1/sqrt(params.n);
     % need a bit of pre/post processing to handle softmax_regression_vec's 
     % non-standard quirk of fixing theta = 0 for last class
+    % do this before any normalization
     randTheta2 = randTheta2(1:numClasses-1, :);
+randTheta2 = randTheta2 ./ repmat(sqrt(sum(randTheta2.^2,2)), 1, size(randTheta2,2)); 
 randTheta2 = randTheta2';
 randTheta2 = randTheta2(:);
 
@@ -247,6 +291,7 @@ options.Method = 'lbfgs';
 options.MaxFunEvals = Inf;
 options.MaxIter = 300;
 if isfield(options, 'outputFcn'); options = rmfield(options, 'outputFcn'); end
+if ~RUN_RICA; options.Display = 'Off'; end
 
 % optimize
 %%% MY CODE HERE %%% - MODIFIED from ex1c_softmax.m
@@ -258,9 +303,9 @@ if isfield(options, 'outputFcn'); options = rmfield(options, 'outputFcn'); end
         ), ...
         zeros(featureSize, 1) ...
     ];
-    t = toc() / 60;
-    fprintf('Softmax classifier training time (min): %g\n', t);
-    tElapsed = tElapsed + t;
+    t = toc();
+    fprintf('Softmax classifier training time (sec): %g\n', t);
+    tElapsed = tElapsed + t/60;
     
 
 
@@ -281,5 +326,9 @@ fprintf('Test Accuracy: %f%%\n', 100*mean(pred(:) == testLabels(:)));
 % convolutional weights we get 97.5% test accuracy. Actual results may
 % vary as a result of random initializations
 
-fprintf('Total training time (min): %g\n', tElapsed);
+if RUN_RICA
+    fprintf('Total run time (min): %g\n', tElapsed);
+else
+    fprintf('Total run time (sec): %g\n', tElapsed*60);
+end
 
