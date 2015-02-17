@@ -188,7 +188,7 @@ if RUN_RICA
         % optimize (train RICA)
         tic;
         opttheta = randTheta;
-        %opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
+        opttheta = minFunc( @(theta) softICACost(theta, x, params), randTheta, options );
         t = toc() / 60;
         fprintf('RICA unsupervised training time (min): %g\n', t);
         tElapsed = tElapsed + t;
