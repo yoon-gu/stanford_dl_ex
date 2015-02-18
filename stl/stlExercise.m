@@ -11,6 +11,7 @@
 
     % is it just me, or do the minor hacks that let this run on 32-bit MATLAB make it a LOT faster??
     % like, the ENTIRE script runs in ~2 min, instead of 20+?
+        % oh, that's probably the single-precision, which gives horrible results...
 
 clear all; 
 close all;
@@ -34,7 +35,7 @@ params.ffRicaEpsilon = 1e-2;%params.epsilon; % for feedFowardRica() [sic] (defau
 params.DEBUG = false;
 
 NORMALIZE_SUPERVISED_DATA = true;
-NORMALIZE_ZCA_RESULT = true; % RICA runs only: setting this to false was the change that made my filters look reasonable...
+NORMALIZE_ZCA_RESULT = false; % RICA runs only: setting this to false was the change that made my filters look reasonable...
 RUN_RICA = isOctave(); % false to read weights from file
 RANDN_WIDTH_RICA = 0.01; % default 0.01
 RANDN_WIDTH_SOFTMAX = 0.01; % default 0.01
@@ -43,13 +44,11 @@ USE_WHITENING_V = true;
 
 SAVED_WEIGHTS_FILE = sprintf('savedWeights-lambda=%0.4f.mat', params.lambda);
 
-
-
 if ~isOctave(); options.useMex = false; end % Octave and MATLAB mex files can't commingle...can they?
 if isOctave()
     rand('state', 0);
 else
-    rng('default'); % get numbers to match (most) of the figures
+%     rng('default'); % get numbers to match (most) of the figures
 end
 
 DEBUG = params.DEBUG;
@@ -69,7 +68,11 @@ else
     end
     fractionUnlabeled = 5/6;
 end
-zcaEpsilon = 1e-4; % red herring! ZCA-whitened patches look FINE - and converged in small-eps direction
+zcaEpsilon = 0.1;% is boddmg just being sloppy copy/pasting pca_gen.m? 1e-4; % red herring! ZCA-whitened patches look FINE - and converged in small-eps direction
+
+if zcaEpsilon ~= 1e-4
+    SAVED_WEIGHTS_FILE = sprintf('savedWeights-epsilon=%0.4f.mat', zcaEpsilon);
+end
 
 
 % use default parameters/algorithms
@@ -77,7 +80,7 @@ if NORMALIZE_ZCA_RESULT
     SAVED_WEIGHTS_FILE = 'savedWeights-stock.mat';
     params.lambda = 0.0005;
     params.epsilon = 1e-2;
-    params.ffRicaEpsilon = 1e-2;
+    params.ffRicaEpsilon = 1e-2; % default 1e-2
     RANDN_WIDTH_RICA = 0.01; % default 0.01
     RANDN_WIDTH_SOFTMAX = 0.01; % default 0.01
     numPatches = 200000;
@@ -234,8 +237,6 @@ if USE_RANDOM_WEIGHTS && ~RUN_RICA
     disp 'Also not using any whitening? (this is the empty-stub default)'
     V = eye(size(V));
 elseif USE_WHITENING_V
-%     % undo post-multiplication by V
-%     W = W*V';
 
     % post-multiply weights by same whitening matrix as in zca2?
     V = (U * diag(1./sqrt(diag(S) + zcaEpsilon)) * U');
@@ -310,6 +311,8 @@ if ~RUN_RICA; options.Display = 'Off'; end
 % optimize
 %%% MY CODE HERE %%% - MODIFIED from ex1c_softmax.m
     tic;
+%     opttheta2 = reshape(minFunc(@softmax_regression_vec, randTheta2(:), options, trainFeatures, trainLabels), ...
+%             featureSize, numClasses);
     opttheta2 = [ ...
         reshape(...
             minFunc(@softmax_regression_vec, randTheta2(:), options, trainFeatures, trainLabels), ...

@@ -61,7 +61,7 @@ for imageNum = 1:numImages
     %%% MY CODE HERE %%% - copy/pasted from cnnConvolve.m....
         convolvedImage = conv2(im, filt, 'valid');%convolvedImage + conv2(im, filt, 'valid'); % 'no bias term' - as per spec above
         resp = convolvedImage;
-        resp = sigmoid(convolvedImage); % hmmm... i guess so...? otherwise, just a glorified linear system, and filters are irrelevant?
+%         resp = sigmoid(convolvedImage); % hmmm... i guess so...? otherwise, just a glorified linear system, and filters are irrelevant?
 %         resp(find(resp < 0)) = 0; % rectified linear??
         assert(isequal(size(resp), [convDim convDim]))
     
@@ -74,6 +74,10 @@ for imageNum = 1:numImages
         act = sqrt(subsampled + params.ffRicaEpsilon); % no need to divide by pooDim^2?
         assert(isequal(size(act), [convDim / poolDim, convDim / poolDim]));
         assert(mod(convDim, poolDim) == 0);
+
+%         % do they mean the average L1-norm instead??
+%         convolved = conv2(sqrt(resp.^2 + params.ffRicaEpsilon), poolMat, 'valid');
+%         act = convolved(1:poolDim:convDim, 1:poolDim:convDim) / poolDim^2;
     
     features(:, :, filterNum, imageNum) = act;
   end

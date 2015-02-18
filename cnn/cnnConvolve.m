@@ -43,7 +43,8 @@ for imageNum = 1:numImages
     convolvedImage = zeros(convDim, convDim);
 
     % Obtain the feature (filterDim x filterDim) needed during the convolution
-    filt = W(:,:,filterNum); % wow this is MUCH easier than the neural network exercise...
+    %%% MY CODE HERE %%%
+        filt = W(:,:,filterNum); % wow this is MUCH easier than the neural network exercise...
 
     % Flip the feature matrix because of the definition of convolution, as explained later
     filt = rot90(squeeze(filt),2); % filter() is a system function in Octave
@@ -53,12 +54,14 @@ for imageNum = 1:numImages
 
     % Convolve "filter" with "im", adding the result to convolvedImage
     % be sure to do a 'valid' convolution
-    convolvedImage = convolvedImage + conv2(im, filt, 'valid');    
+    %%% MY CODE HERE %%%
+        convolvedImage = convolvedImage + conv2(im, filt, 'valid');    
     
     % Add the bias unit
     % Then, apply the sigmoid function to get the hidden activation
-    convolvedImage = convolvedImage + b(filterNum);
-    convolvedImage = sigmoid(convolvedImage); % i don't like this use of 'convolvedImage' as a temp variable...
+    %%% MY CODE HERE %%%
+        convolvedImage = convolvedImage + b(filterNum);
+        convolvedImage = sigmoid(convolvedImage); % i don't like this use of 'convolvedImage' as a temp variable...
     
     convolvedFeatures(:, :, filterNum, imageNum) = convolvedImage;
   end
