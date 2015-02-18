@@ -34,13 +34,13 @@ params.epsilon = 1e-2; % for RICA L1-norm (default 1e-2)
 params.ffRicaEpsilon = 1e-2;%params.epsilon; % for feedFowardRica() [sic] (default 1e-2)
 params.DEBUG = false;
 
-NORMALIZE_SUPERVISED_DATA = true;
+NORMALIZE_SUPERVISED_DATA = false;
 NORMALIZE_ZCA_RESULT = false; % RICA runs only: setting this to false was the change that made my filters look reasonable...
 RUN_RICA = isOctave(); % false to read weights from file
 RANDN_WIDTH_RICA = 0.01; % default 0.01
 RANDN_WIDTH_SOFTMAX = 0.01; % default 0.01
-USE_RANDOM_WEIGHTS = false;
-USE_WHITENING_V = true;
+USE_RANDOM_WEIGHTS = true;
+USE_WHITENING_V = false;
 
 SAVED_WEIGHTS_FILE = sprintf('savedWeights-lambda=%0.4f.mat', params.lambda);
 
@@ -221,26 +221,28 @@ if RUN_RICA
     saveargs = {'-mat'; SAVED_WEIGHTS_FILE};
     if isOctave(); order = [1 2]; else order = [2 1]; end
     save(saveargs{order(1)}, saveargs{order(2)}, 'W', 'U', 'S', 'V');
-else
-    % load RICA-trained weights from file
-    load(SAVED_WEIGHTS_FILE);
-end
 
-%load(sprintf('saved-%0.4f.mat', params.lambda)); % get old W,U,V. 
-%save(saveargs{order(1)}, saveargs{order(2)}, 'W', 'U', 'S', 'V'); % add S. will redo whitening from scratch.
-%assert(false, 'tinkering with save data')
-
-if USE_RANDOM_WEIGHTS && ~RUN_RICA
+elseif USE_RANDOM_WEIGHTS    
     disp 'Using random weights as a control experiment.'
     W = reshape(randTheta, params.numFeatures, params.n);% random weights (testing)
     
     disp 'Also not using any whitening? (this is the empty-stub default)'
-    V = eye(size(V));
-elseif USE_WHITENING_V
+    V = eye(params.n);
+    
+else    
+    %load(sprintf('saved-%0.4f.mat', params.lambda)); % get old W,U,V. 
+    %save(saveargs{order(1)}, saveargs{order(2)}, 'W', 'U', 'S', 'V'); % add S. will redo whitening from scratch.
+    %assert(false, 'tinkering with save data')
 
+    % load RICA-trained weights from file
+    load(SAVED_WEIGHTS_FILE);
+end
+
+if USE_WHITENING_V && ~USE_RANDOM_WEIGHTS
     % post-multiply weights by same whitening matrix as in zca2?
     V = (U * diag(1./sqrt(diag(S) + zcaEpsilon)) * U');
 end
+
 display_network(W');
 
 
