@@ -1,4 +1,4 @@
-function [preds, train_preds] = metarun()
+function [acc, train_acc] = metarun()
     % a quickie wrapper function that will run stlExercise multiple times, saving results to disk each time.
     % purpose: to get error bars over multiple runs (each ~45 min in 64-bit Octave, since 32-bit MATLAB crashes/doesn't converge)
 
@@ -11,30 +11,37 @@ function [preds, train_preds] = metarun()
         stlExercise; % hmm, problem: stlExercise calls `clear all`...       
         
         % horrible workaround because stlExercise's `clear all` kills ALL variables in Octave 3.2.4
-        if exist('preds.txt') % have to hard-code this name! it'll get cleared otherwise, even for local functions
-            load 'preds.txt'
+        if exist('acc.txt') % have to hard-code this name! it'll get cleared otherwise, even for local functions
+            load 'acc.txt'
         else
-            preds = [];
-            train_preds = [];
+            acc = [];
+            train_acc = [];
         end
         
         % accumulate results of current run
-        preds = [preds, pred];
-        train_preds = [train_preds, train_pred];
-        save('-text', 'preds.txt', 'preds', 'train_preds');
+        acc = [acc, mean(pred(:) == testLabels(:))];
+        train_acc = [train_acc, mean(train_pred(:) == trainLabels(:))];
+        save('-text', 'acc.txt', 'acc', 'train_acc');
         
         % also save the trained RICA weights, which are costly. 
         % what the hell - save the whole damn workspace, besides the massive data structures
         % can conceivably use as 'load state' for further tinkering
-        run_number = length(preds); % don't have to save r to disk!
-        clear mnistData;
-        clear unlabeledData;
+        run_number = length(acc); % don't have to save r to disk!
+        clear mnist*;
+        clear patches;
+        clear train*
+        clear test*
+        clear unlabeled*;
+        if exist('x'); clear x; end
+        
+        % the important part here is to save parameters, not data.
         save('-mat', sprintf('run%02d.mat', run_number));
         
     end
     
-    fprintf('Training accuracy: %g +/- %g\n', mean(train_preds), std(train_preds) / sqrt(run_number));
-    fprintf('Test accuracy: %g +/- %g\n', mean(preds), std(preds) / sqrt(run_number));
+    load('acc.txt') % because clear train* will kill these train_acc
+    fprintf('Training accuracy: %g +/- %g\n', mean(train_acc), std(train_acc) / sqrt(run_number));
+    fprintf('Test accuracy: %g +/- %g\n', mean(acc), std(acc) / sqrt(run_number));
     
     %delete '~preds.txt' % hmm, leave it be?? be careful on multiple runs then...
 end
