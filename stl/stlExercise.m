@@ -34,7 +34,7 @@ params.ffRicaEpsilon = 1e-2;%params.epsilon; % for feedFowardRica() [sic] (defau
 params.DEBUG = false;
 
 NORMALIZE_SUPERVISED_DATA = true;
-NORMALIZE_ZCA_RESULT = false; % RICA runs only: setting this to false was the change that made my filters look reasonable...
+NORMALIZE_ZCA_RESULT = true; % RICA runs only: setting this to false was the change that made my filters look reasonable...
 RUN_RICA = isOctave(); % false to read weights from file
 RANDN_WIDTH_RICA = 0.01; % default 0.01
 RANDN_WIDTH_SOFTMAX = 0.01; % default 0.01
@@ -42,6 +42,7 @@ USE_RANDOM_WEIGHTS = false;
 USE_WHITENING_V = true;
 
 SAVED_WEIGHTS_FILE = sprintf('savedWeights-lambda=%0.4f.mat', params.lambda);
+
 
 
 if ~isOctave(); options.useMex = false; end % Octave and MATLAB mex files can't commingle...can they?
@@ -69,6 +70,21 @@ else
     fractionUnlabeled = 5/6;
 end
 zcaEpsilon = 1e-4; % red herring! ZCA-whitened patches look FINE - and converged in small-eps direction
+
+
+% use default parameters/algorithms
+if NORMALIZE_ZCA_RESULT
+    SAVED_WEIGHTS_FILE = 'savedWeights-stock.mat';
+    params.lambda = 0.0005;
+    params.epsilon = 1e-2;
+    params.ffRicaEpsilon = 1e-2;
+    RANDN_WIDTH_RICA = 0.01; % default 0.01
+    RANDN_WIDTH_SOFTMAX = 0.01; % default 0.01
+    numPatches = 200000;
+    params.numFeatures = 32;
+end
+    
+
 
 
 
@@ -217,8 +233,15 @@ if USE_RANDOM_WEIGHTS && ~RUN_RICA
     
     disp 'Also not using any whitening? (this is the empty-stub default)'
     V = eye(size(V));
+elseif USE_WHITENING_V
+%     % undo post-multiplication by V
+%     W = W*V';
+
+    % post-multiply weights by same whitening matrix as in zca2?
+    V = (U * diag(1./sqrt(diag(S) + zcaEpsilon)) * U');
 end
 display_network(W');
+
 
 
 %% ======================================================================
@@ -226,16 +249,7 @@ display_network(W');
 % pre-multiply the weights with whitening matrix, equivalent to whitening       % POST-multiply the weights?
 % each image patch before applying convolution. V should be the same V
 % returned by the zca2 when you whiten the patches.
-W = W*V;
-
-    if USE_WHITENING_V
-        % undo post-multiplication by V
-        W = W*V';
-        
-        % post-multiply weights by same whitening matrix as in zca2?
-        W = W * (U * diag(1./sqrt(diag(S) + zcaEpsilon)) * U');
-    end
-        
+W = W*V;        
 
 %  reshape RICA weights to be convolutional weights.
 W = reshape(W, params.numFeatures, params.patchWidth, params.patchWidth);
