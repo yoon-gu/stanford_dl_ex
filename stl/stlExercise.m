@@ -39,8 +39,8 @@ NORMALIZE_ZCA_RESULT = false; % RICA runs only: setting this to false was the ch
 RUN_RICA = isOctave(); % false to read weights from file
 RANDN_WIDTH_RICA = 0.01; % default 0.01
 RANDN_WIDTH_SOFTMAX = 0.01; % default 0.01
-USE_RANDOM_WEIGHTS = true;
-USE_WHITENING_V = false;
+USE_RANDOM_WEIGHTS = false;
+USE_WHITENING_V = true;
 
 SAVED_WEIGHTS_FILE = sprintf('savedWeights-lambda=%0.4f.mat', params.lambda);
 
@@ -48,7 +48,7 @@ if ~isOctave(); options.useMex = false; end % Octave and MATLAB mex files can't 
 if isOctave()
     rand('state', 0);
 else
-%     rng('default'); % get numbers to match (most) of the figures
+%     rng('default'); % get digits to match (most) of the tutorial figures
 end
 
 DEBUG = params.DEBUG;
