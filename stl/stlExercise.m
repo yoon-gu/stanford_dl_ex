@@ -36,7 +36,7 @@ params.DEBUG = false;
 
 
 NORMALIZE_SUPERVISED_DATA = false;
-NORMALIZE_ZCA_RESULT = false; % RICA runs only: setting this to false was the change that made my filters look reasonable...
+NORMALIZE_ZCA_RESULT = true; % RICA runs only: setting this to false was the change that made my filters look reasonable...
 RUN_RICA = isOctave(); % false to read weights from file
 RANDN_WIDTH_RICA = 0.01; % default 0.01
 RANDN_WIDTH_SOFTMAX = 0.01; % default 0.01
@@ -88,15 +88,15 @@ if NORMALIZE_ZCA_RESULT
     RANDN_WIDTH_SOFTMAX = 0.01; % default 0.01
     numPatches = 200000;
     params.numFeatures = 32;
-    zcaEpsilon = 1e-4;
+    %zcaEpsilon = 1e-4;
     
     % the following are "non-parameter" modifications I was toying with. 
     % numerical parameters don't change, but code logic does.
     % uncomment to run factory code
-    %NORMALIZE_SUPERVISED_DATA = false;
-    %NORMALIZE_ZCA_RESULT = true;
-    %USE_RANDOM_WEIGHTS = false;
-    %USE_WHITENING_V = false;
+    NORMALIZE_SUPERVISED_DATA = false;
+    NORMALIZE_ZCA_RESULT = true;
+    USE_RANDOM_WEIGHTS = true;
+    USE_WHITENING_V = false;
     
 end
     
