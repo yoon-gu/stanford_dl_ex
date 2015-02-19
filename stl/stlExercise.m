@@ -161,7 +161,7 @@ randTheta = randn(params.numFeatures,params.n)*RANDN_WIDTH_RICA;  % 1/sqrt(param
 randTheta = randTheta ./ repmat(sqrt(sum(randTheta.^2,2)), 1, size(randTheta,2)); 
 randTheta = randTheta(:);
 
-if RUN_RICA
+if RUN_RICA && ~USE_RANDOM_WEIGHTS
     % subsample random patches from the unlabelled+training data
     if isOctave()
         patches = samplePatches([unlabeledData,trainData],params.patchWidth,numPatches);
